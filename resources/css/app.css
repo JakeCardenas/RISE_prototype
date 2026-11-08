@@ -156,6 +156,10 @@
     --sheet-fill-solid: rgb(249 250 247 / 0.97);
     --sheet-blur: 22px;
 
+    /* The sign-in form: more open than other forms, with a restrained blur, so the window's light comes through */
+    --auth-panel-fill: rgb(248 250 245 / 0.9);
+    --auth-panel-blur: 14px;
+
     /*
      | The dimming over the photo: dark green-charcoal, strongest across the sky where titles sit and lighter over
      | the houses and lawn. The brightest cloud stays dark enough for white text at 5.7:1 and --color-muted at
@@ -481,6 +485,49 @@
     }
 
     /*
+     | The sign-in window: the same glass, drawn on a layer behind its content rather than on the window itself, so
+     | the form panel inside can blur as glass of its own; a browser can't blur through two nested glass layers.
+     */
+    .glass-shell {
+        position: relative;
+        isolation: isolate;
+        background: none;
+        box-shadow: none;
+    }
+
+    .glass-shell::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        border-radius: inherit;
+        background:
+            var(--glass-sheen),
+            linear-gradient(var(--glass-fill), var(--glass-fill));
+        box-shadow: var(--glass-rim), var(--shadow-glass);
+        pointer-events: none;
+    }
+
+    @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+        .glass-shell {
+            -webkit-backdrop-filter: none;
+            backdrop-filter: none;
+        }
+
+        .glass-shell::before {
+            -webkit-backdrop-filter: blur(var(--glass-blur-regular)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness));
+            backdrop-filter: blur(var(--glass-blur-regular)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness));
+        }
+    }
+
+    @media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+        .glass-shell::before {
+            -webkit-backdrop-filter: none;
+            backdrop-filter: none;
+        }
+    }
+
+    /*
      | Where page content passes under the floating bars on phones, it fades into the dark backdrop first, like Apple's
      | scroll edge effect: a white sheet never sits straight under the bars' light text, so the glass can stay clear.
      */
@@ -534,9 +581,17 @@
             0 18px 34px -16px rgb(0 0 0 / 0.6);
     }
 
-    /* The sign-in window settles into place once, as a material arriving, not a page sliding in */
+    /*
+     | The sign-in window settles into place once, as a material arriving, not a page sliding in. The window itself
+     | only moves; its glass and content fade in, because fading the window would stop its glass layer blurring.
+     */
     .glass-enter {
-        animation: rise-settle 460ms var(--ease-glass) both;
+        animation: rise-settle 460ms var(--ease-glass) backwards;
+    }
+
+    .glass-enter::before,
+    .glass-enter > * {
+        animation: rise-fade 320ms ease-out backwards;
     }
 
     /*
@@ -883,10 +938,20 @@
         --sheet-fill: var(--sheet-fill-solid);
     }
 
+    /* The sign-in form: a little more open than other forms; its fields stay solid white, and it closes up like the rest */
+    .sheet-auth {
+        --sheet-fill: var(--auth-panel-fill);
+    }
+
     @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
         .sheet:not(.sheet-solid) {
             -webkit-backdrop-filter: blur(var(--sheet-blur)) saturate(1.4);
             backdrop-filter: blur(var(--sheet-blur)) saturate(1.4);
+        }
+
+        .sheet.sheet-auth {
+            -webkit-backdrop-filter: blur(var(--auth-panel-blur)) saturate(1.25);
+            backdrop-filter: blur(var(--auth-panel-blur)) saturate(1.25);
         }
     }
 
@@ -1076,7 +1141,8 @@
     }
 
     /* The thumb is solid white on clear glass, so its label switches back to dark text */
-    .segmented-option:has(input:checked) {
+    .segmented-option:has(input:checked),
+    .segmented-option[aria-current='page'] {
         @apply bg-white text-[#18311f];
         text-shadow: none;
         box-shadow:
@@ -1131,6 +1197,20 @@
         @apply pointer-events-none absolute top-3 rounded-full bg-rail/85 px-3 py-1 text-xs font-semibold text-white tabular-nums;
     }
 
+    /* Overlay: the later photo faded over the earlier one; both whole, uncropped and unblurred */
+    .overlay-view {
+        @apply relative overflow-hidden rounded-photo bg-well-strong;
+        --overlay: 0.5;
+    }
+
+    .overlay-view img {
+        @apply absolute inset-0 size-full object-contain;
+    }
+
+    .overlay-view .overlay-later {
+        opacity: var(--overlay);
+    }
+
     /* Provenance laid out like the title block of a drawing sheet */
     .title-block {
         @apply grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-line bg-line;
@@ -1154,6 +1234,29 @@
         stroke: rgb(0 0 0 / 0.5);
         stroke-width: 5px;
         stroke-linejoin: round;
+    }
+
+    /* Boxes a researcher draws on an evaluation image: teal, so they never read as the model's magenta marks */
+    .annotate[data-ready] {
+        cursor: crosshair;
+        touch-action: none;
+    }
+
+    .annotate img {
+        pointer-events: none;
+        user-select: none;
+    }
+
+    .annotate-box {
+        fill: color-mix(in srgb, var(--color-success) 14%, transparent);
+        stroke: var(--color-success);
+        stroke-width: 2.5px;
+    }
+
+    .annotate-halo {
+        fill: none;
+        stroke: rgb(255 255 255 / 0.85);
+        stroke-width: 5px;
     }
 
     .mark-line {
@@ -1214,8 +1317,13 @@
 
 @keyframes rise-settle {
     from {
-        opacity: 0;
         transform: translateY(12px) scale(0.985);
+    }
+}
+
+@keyframes rise-fade {
+    from {
+        opacity: 0;
     }
 }
 
@@ -1276,8 +1384,10 @@
     visibility: hidden;
 }
 
-/* Compare: side by side by default; the slider view only exists once its script has run */
+/* Compare: side by side by default; the slider and overlay views only exist once their script has run */
 .compare-views:has(input[value='wipe']:checked) [data-compare-side],
-.compare-views:not(:has(input[value='wipe']:checked)) [data-compare-wipe] {
+.compare-views:has(input[value='overlay']:checked) [data-compare-side],
+.compare-views:not(:has(input[value='wipe']:checked)) [data-compare-wipe],
+.compare-views:not(:has(input[value='overlay']:checked)) [data-compare-overlay] {
     display: none;
 }

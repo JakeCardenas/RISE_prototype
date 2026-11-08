@@ -1,9 +1,9 @@
 @props(['heading', 'intro' => null])
 
-{{-- Sign in and register: one clear glass window in the RISE environment, with the form on a near-solid sage-white panel inside it --}}
+{{-- Sign in and register: one clear glass window in the RISE environment, with the form on a lightly translucent sage-white panel inside it --}}
 <div class="flex min-h-dvh flex-col items-center justify-center px-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-10">
-    <div class="glass glass-enter grid w-full max-w-4xl gap-2 rounded-[2rem] p-2 sm:p-2.5 lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)]">
-        {{-- The brand and its promise together at the top; what RISE is and whose study it belongs to at the foot --}}
+    <div class="glass glass-shell glass-enter grid w-full max-w-4xl gap-2 rounded-[2rem] p-2 sm:p-2.5 lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)]">
+        {{-- The brand and its promise at the top, then the study's university, with deliberate open space around it --}}
         <section aria-label="About RISE" class="flex flex-col px-4 pt-4 pb-3 sm:px-8 sm:pt-7 lg:px-9 lg:py-9">
             <a href="{{ route('login') }}" class="-m-1.5 flex w-fit items-center gap-3.5 rounded-[1.25rem] p-1.5 sm:gap-4 lg:gap-5 lg:rounded-[1.5rem]">
                 <span class="brand-tile brand-tile-hero size-14 sm:size-16 lg:size-20">
@@ -16,13 +16,13 @@
                 Track cracks over time, one photo at a time.
             </p>
 
-            <div class="mt-auto hidden max-w-sm pt-12 lg:block">
-                <x-disclosure class="text-muted" />
-                <x-university-lockup class="mt-6 flex" />
-            </div>
+            {{-- On wide screens the free space splits around the university details: nearer the tagline, with room below --}}
+            <span class="hidden min-h-12 grow-3 lg:block" aria-hidden="true"></span>
+            <x-university-lockup class="hidden lg:flex" />
+            <span class="hidden grow-2 lg:block" aria-hidden="true"></span>
         </section>
 
-        <div class="sheet sheet-solid p-6 sm:p-9">
+        <div class="sheet sheet-auth p-6 sm:p-9">
             @if (session('success'))
                 <x-alert>{{ session('success') }}</x-alert>
             @endif
@@ -44,8 +44,7 @@
         </div>
     </div>
 
-    <div class="mt-6 flex max-w-md flex-col items-center gap-5 px-4 pb-2 text-center lg:hidden">
-        <x-disclosure class="text-muted" />
+    <div class="mt-6 flex justify-center px-4 pb-2 lg:hidden">
         <x-university-lockup class="flex text-left" />
     </div>
 </div>

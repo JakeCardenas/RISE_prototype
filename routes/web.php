@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\NoteController;
+use App\Http\Controllers\AiFeedbackController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ComparisonController;
 use App\Http\Controllers\FollowUpController;
@@ -13,6 +14,10 @@ use App\Http\Controllers\PhotoComparisonController;
 use App\Http\Controllers\PhotoNoteController;
 use App\Http\Controllers\PhotoRecordController;
 use App\Http\Controllers\PhotoRecordImageController;
+use App\Http\Controllers\Research\EvaluationItemController;
+use App\Http\Controllers\Research\EvaluationRunController;
+use App\Http\Controllers\Research\WorkspaceController;
+use App\Http\Middleware\EnsureResearcher;
 
 Route::get('/', function () {
     return redirect()->route('overview');
@@ -44,12 +49,29 @@ Route::middleware('auth')->group(function() {
     Route::delete('/records/{record}',    [PhotoRecordController::class, 'destroy'])->name('records.destroy');
     Route::get('/records/{record}/photo', PhotoRecordImageController::class)->name('records.photo');
     Route::get('/records/{record}/analysis',        [PhotoAnalysisController::class, 'show'])->name('records.analysis.show');
-    Route::post('/records/{record}/analysis',       [PhotoAnalysisController::class, 'store'])->name('records.analysis.store');
+    Route::post('/records/{record}/analysis',       [PhotoAnalysisController::class, 'store'])->middleware('throttle:ai-requests')->name('records.analysis.store');
     Route::get('/records/{record}/analysis/status', [PhotoAnalysisController::class, 'status'])->name('records.analysis.status');
     Route::patch('/records/{record}/note',          PhotoNoteController::class)->name('records.note.update');
-    Route::post('/points/{point}/ai-comparisons',   [PhotoComparisonController::class, 'store'])->name('points.ai-comparisons.store');
+    Route::post('/points/{point}/ai-comparisons',   [PhotoComparisonController::class, 'store'])->middleware('throttle:ai-requests')->name('points.ai-comparisons.store');
     Route::get('/ai-comparisons/{comparison}/status',    [PhotoComparisonController::class, 'status'])->name('ai-comparisons.status');
     Route::patch('/ai-comparisons/{comparison}/dismiss', [PhotoComparisonController::class, 'dismiss'])->name('ai-comparisons.dismiss');
+    Route::put('/analyses/{analysis}/feedback',          [AiFeedbackController::class, 'analysis'])->middleware('throttle:ai-feedback')->name('analyses.feedback');
+    Route::put('/ai-comparisons/{comparison}/feedback',  [AiFeedbackController::class, 'comparison'])->middleware('throttle:ai-feedback')->name('ai-comparisons.feedback');
+
+    //CAPSTONE EVALUATION WORKSPACE (researcher accounts only, see README.md; anyone else gets a 404)
+    Route::middleware(EnsureResearcher::class)->prefix('research')->name('research.')->group(function () {
+        Route::get('/',                    WorkspaceController::class)->name('index');
+        Route::get('/images',              [EvaluationItemController::class, 'index'])->name('items.index');
+        Route::post('/images',             [EvaluationItemController::class, 'store'])->middleware('throttle:research')->name('items.store');
+        Route::get('/images/{item}',       [EvaluationItemController::class, 'edit'])->name('items.edit');
+        Route::put('/images/{item}',       [EvaluationItemController::class, 'update'])->middleware('throttle:research')->name('items.update');
+        Route::delete('/images/{item}',    [EvaluationItemController::class, 'destroy'])->middleware('throttle:research')->name('items.destroy');
+        Route::get('/images/{item}/file',  [EvaluationItemController::class, 'image'])->name('items.image');
+        Route::post('/runs',               [EvaluationRunController::class, 'store'])->middleware('throttle:research-runs')->name('runs.store');
+        Route::get('/runs/{run}',          [EvaluationRunController::class, 'show'])->name('runs.show');
+        Route::get('/runs/{run}/status',   [EvaluationRunController::class, 'status'])->name('runs.status');
+        Route::get('/runs/{run}/export',   [EvaluationRunController::class, 'export'])->name('runs.export');
+    });
 
     //NOTE ROUTES
     Route::get('/notes',             [NoteController::class, 'index'])->name('notes.index');

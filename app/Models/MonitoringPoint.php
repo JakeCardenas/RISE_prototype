@@ -44,6 +44,12 @@ class MonitoringPoint extends Model
         return $this->hasMany(PhotoRecord::class);
     }
 
+    // The first photo, which every follow-up is compared with
+    public function baselineRecord(): HasOne
+    {
+        return $this->hasOne(PhotoRecord::class)->oldestOfMany('submitted_at');
+    }
+
     public function latestRecord(): HasOne
     {
         return $this->hasOne(PhotoRecord::class)->latestOfMany('submitted_at');

@@ -146,7 +146,7 @@ test('claims about size, cause, severity, repairs or safety are never shown', fu
 
 test('the AI wording is never saved as a note by itself; the resident can edit it into their own note', function () {
     turnOnComparison();
-    Http::fake(['vision.example.test/*' => Http::response(visionReply(['A thin line appears longer in photo B.'], []))]);
+    Http::fake(['vision.example.test/*' => Http::response(visionReply(['A thin line appears darker in photo B.'], []))]);
 
     askForComparison($this);
 
@@ -165,14 +165,14 @@ test('the AI wording is never saved as a note by itself; the resident can edit i
 
 test('a result can be dismissed, and run again later', function () {
     turnOnComparison();
-    Http::fake(['vision.example.test/*' => Http::response(visionReply(['A thin line appears longer in photo B.'], []))]);
+    Http::fake(['vision.example.test/*' => Http::response(visionReply(['A thin line appears darker in photo B.'], []))]);
     askForComparison($this);
     $comparison = PhotoComparison::sole();
 
     $this->patch(route('ai-comparisons.dismiss', $comparison))->assertRedirect($this->compareUrl.'#ai-comparison');
 
     expect($comparison->fresh()->dismissed_at)->not->toBeNull();
-    $this->get($this->compareUrl)->assertDontSee('A thin line appears longer')->assertSee('Compare with AI');
+    $this->get($this->compareUrl)->assertDontSee('A thin line appears darker')->assertSee('Compare with AI');
 });
 
 test('provider failures are stored as safe codes and the photos stay as they were', function () {

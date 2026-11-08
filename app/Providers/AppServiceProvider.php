@@ -4,11 +4,13 @@ namespace App\Providers;
 
 use App\Models\MonitoringPoint;
 use App\Models\PhotoRecord;
+use App\Services\Analysis\AnalysisProviders;
 use App\Services\Analysis\CrackDetector;
-use App\Services\Analysis\RoboflowCrackDetector;
+use App\Services\Comparison\GeminiPhotoComparer;
 use App\Services\Comparison\OpenAiCompatiblePhotoComparer;
 use App\Services\Comparison\PhotoComparer;
 use App\Services\Comparison\UnconfiguredPhotoComparer;
+use App\Services\Gemini\GeminiClient;
 use App\Support\HomeAreas;
 use Closure;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -25,15 +27,18 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        // The crack-image detector is replaceable; add providers here and choose one with RISE_ANALYSIS_PROVIDER
-        $this->app->bind(CrackDetector::class, fn () => match (config('rise.analysis_provider')) {
-            default => new RoboflowCrackDetector(config('services.roboflow')),
-        });
+        // The single-photo provider is replaceable; add providers in AnalysisProviders and choose one with RISE_ANALYSIS_PROVIDER
+        $this->app->bind(CrackDetector::class, fn ($app) => $app->make(AnalysisProviders::class)->default());
 
         // The optional two-photo comparison stays unavailable until a provider is chosen and configured (see README.md)
-        $this->app->bind(PhotoComparer::class, fn () => match (config('services.photo_comparison.driver')) {
-            'openai_compatible' => new OpenAiCompatiblePhotoComparer(config('services.photo_comparison')),
-            default => new UnconfiguredPhotoComparer,
+        $this->app->bind(PhotoComparer::class, function () {
+            $gemini = new GeminiPhotoComparer(new GeminiClient(config('services.gemini')));
+
+            return match (config('services.photo_comparison.driver') ?: ($gemini->isConfigured() ? 'gemini' : null)) {
+                'gemini' => $gemini,
+                'openai_compatible' => new OpenAiCompatiblePhotoComparer(config('services.photo_comparison')),
+                default => new UnconfiguredPhotoComparer,
+            };
         });
     }
 
@@ -57,6 +62,21 @@ class AppServiceProvider extends ServiceProvider
             Limit::perMinute(3)->by('minute:'.$request->ip())->response($this->tooManyAttempts('sign-up')),
             Limit::perHour(20)->by('hour:'.$request->ip())->response($this->tooManyAttempts('sign-up')),
         ]);
+
+        // Each AI request sends photos to an outside service, so a resident can only ask for a few at a time
+        RateLimiter::for('ai-requests', fn (Request $request) => [
+            Limit::perMinute(4)->by('minute:'.$request->user()->id)->response($this->slowDown('AI checks')),
+            Limit::perHour(30)->by('hour:'.$request->user()->id)->response($this->slowDown('AI checks')),
+        ]);
+
+        RateLimiter::for('ai-feedback', fn (Request $request) => Limit::perMinute(20)->by($request->user()->id)->response($this->slowDown('feedback changes')));
+
+        // The evaluation workspace: uploads, and runs that each send many research images to a provider
+        RateLimiter::for('research', fn (Request $request) => Limit::perHour(120)->by($request->user()->id)->response($this->slowDown('changes')));
+        RateLimiter::for('research-runs', fn (Request $request) => Limit::perHour(6)->by($request->user()->id)->response($this->slowDown('evaluation runs')));
+
+        // How quickly an evaluation run's jobs call the provider; jobs over the limit wait in the queue
+        RateLimiter::for('evaluation-provider', fn () => Limit::perMinute(max(1, (int) config('rise.evaluation_per_minute'))));
 
         // The layout's navigation lists the signed-in resident's own monitoring points by area, and marks the one being viewed
         View::composer('components.layout', function ($view) {
@@ -93,6 +113,17 @@ class AppServiceProvider extends ServiceProvider
             return back()
                 ->withErrors(['email' => "Too many {$kind} attempts. Please wait {$wait} and try again."])
                 ->withInput($request->only('name', 'email'));
+        };
+    }
+
+    // Back to the page with a plain message; nothing was sent or saved
+    private function slowDown(string $what): Closure
+    {
+        return function (Request $request, array $headers) use ($what) {
+            $seconds = max(1, (int) ($headers['Retry-After'] ?? 60));
+            $wait = $seconds >= 90 ? ceil($seconds / 60).' minutes' : $seconds.' seconds';
+
+            return back()->with('info', "That’s a lot of {$what} in a short time, so nothing was sent or saved. Please wait {$wait} and try again.");
         };
     }
 }

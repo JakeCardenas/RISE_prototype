@@ -4,7 +4,7 @@ namespace App\Jobs;
 
 use App\Models\PhotoAnalysis;
 use App\Services\Analysis\AnalysisFailed;
-use App\Services\Analysis\CrackDetector;
+use App\Services\Analysis\AnalysisProviders;
 use App\Services\Photos\PhotoProcessor;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Throwable;
 
-// Sends one resident-requested photo to the configured detector, outside the web request
+// Sends one resident-requested photo to the provider it was requested from, outside the web request
 class AnalyzePhoto implements ShouldQueue
 {
     use Queueable;
@@ -25,7 +25,7 @@ class AnalyzePhoto implements ShouldQueue
 
     public function __construct(public PhotoAnalysis $analysis) {}
 
-    public function handle(CrackDetector $detector, PhotoProcessor $photos): void
+    public function handle(AnalysisProviders $providers, PhotoProcessor $photos): void
     {
         $analysis = $this->analysis;
 
@@ -33,7 +33,10 @@ class AnalyzePhoto implements ShouldQueue
             return;
         }
 
-        if (! $detector->isConfigured()) {
+        // The provider the resident was told about, even if the server's choice changed while this waited
+        $detector = $providers->make($analysis->provider);
+
+        if (! $detector?->isConfigured()) {
             $analysis->forceFill(['status' => PhotoAnalysis::NOT_CONFIGURED, 'completed_at' => now()])->save();
 
             return;
@@ -56,7 +59,13 @@ class AnalyzePhoto implements ShouldQueue
 
             $analysis->forceFill([
                 'status' => PhotoAnalysis::COMPLETED,
-                'result' => ['image' => $result->image, 'regions' => $result->regions],
+                // A provider's written result is stored only after Observation has checked it; a region detector's
+                // result is derived from its regions when it is shown
+                'result' => array_filter([
+                    'image' => $result->image,
+                    'regions' => $result->regions,
+                    'observation' => $result->observation?->toArray(),
+                ], fn ($value) => $value !== null),
                 'region_count' => count($result->regions),
                 'model_version' => $result->modelVersion,
                 'provider_request_id' => $result->requestId,

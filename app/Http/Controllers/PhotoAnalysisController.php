@@ -38,6 +38,11 @@ class PhotoAnalysisController extends Controller
 
         $configured = $this->detector->isConfigured();
 
+        // Asking again while nothing is set up changes nothing, so no further record is added
+        if (! $configured && $latest?->status === PhotoAnalysis::NOT_CONFIGURED) {
+            return redirect()->route('records.analysis.show', $record);
+        }
+
         $analysis = (new PhotoAnalysis)->forceFill([
             'photo_record_id' => $record->id,
             'user_id' => $record->user_id,

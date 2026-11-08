@@ -196,7 +196,6 @@
                     Photos taken at different times can differ in light, angle and distance, and that can look like change. If you’re
                     worried about a crack, ask a qualified professional to inspect it.
                 </p>
-                <x-disclosure class="mt-3 text-muted" />
             </footer>
         </article>
     </div>

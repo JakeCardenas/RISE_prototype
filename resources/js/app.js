@@ -8,5 +8,6 @@ import './rise/scroll-title';
 import './rise/time-zone';
 import './rise/follow-up';
 import './rise/copy-text';
+import './rise/annotate-regions';
 
 localizeTimes(document);

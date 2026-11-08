@@ -42,6 +42,7 @@
                             @if ($point->latestRecord)
                                 data-reference-src="{{ route('records.photo', $point->latestRecord) }}"
                                 data-reference-date="{{ $point->latestRecord->submitted_at->toIso8601String() }}"
+                                data-baseline-src="{{ route('records.photo', $point->baselineRecord ?? $point->latestRecord) }}"
                             @endif>{{ $point->area ? $point->label.' ('.$point->area.')' : $point->label }}</option>
                     @endforeach
                 </select>
@@ -198,6 +199,22 @@
                                     <img alt="" class="pointer-events-none absolute inset-0 size-full rounded-photo object-contain" data-ghost hidden>
                                 </div>
                             </div>
+
+                            {{-- Quick checks of light, focus and framing, run in this browser on a small copy; they never stop you saving --}}
+                            <p class="sr-only" aria-live="polite" data-quality-status></p>
+                            <section tabindex="-1" class="rounded-2xl border border-line bg-surface p-4" aria-labelledby="quality-heading" data-quality hidden>
+                                <h4 id="quality-heading" class="flex items-start gap-2 font-semibold text-ink">
+                                    <span class="mt-0.5 shrink-0 text-primary" data-quality-icon="issues"><x-icon name="alert-triangle" class="size-4" /></span>
+                                    <span class="mt-0.5 shrink-0 text-success" data-quality-icon="clear"><x-icon name="check-circle" class="size-4" /></span>
+                                    <span data-quality-heading></span>
+                                </h4>
+                                <ul class="mt-2 list-disc space-y-1.5 pl-5 text-sm marker:text-muted" data-quality-list></ul>
+                                <p class="meta mt-2" data-quality-note></p>
+                                <div class="mt-3 flex flex-wrap gap-2" data-quality-actions>
+                                    <button type="button" class="btn btn-secondary" data-quality-retake><x-icon name="refresh" /> Retake or choose another</button>
+                                    <button type="button" class="btn btn-quiet" data-quality-keep>Keep this photo</button>
+                                </div>
+                            </section>
 
                             {{-- Framing check: fade the previous photo in and out over the new one --}}
                             <div class="rounded-2xl border border-line bg-surface p-4" data-ghost-controls hidden>

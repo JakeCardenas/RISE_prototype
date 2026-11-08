@@ -21,7 +21,7 @@ class PhotoRecordController extends Controller
     // CREATE — show the photo form; a resident needs a monitoring point first
     public function create(Request $request, CrackDetector $detector)
     {
-        $points = $request->user()->monitoringPoints()->with('latestRecord')->withCount('photoRecords')->orderBy('label')->get();
+        $points = $request->user()->monitoringPoints()->with('latestRecord', 'baselineRecord')->withCount('photoRecords')->orderBy('label')->get();
 
         if ($points->isEmpty()) {
             return redirect()->route('points.create')

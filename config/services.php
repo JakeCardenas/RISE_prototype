@@ -45,10 +45,22 @@ return [
         'max_image_side' => (int) (env('ROBOFLOW_MAX_IMAGE_SIDE') ?: 1280),
     ],
 
-    // Optional AI comparison of two photos. Off until all of these are set: Roboflow's crack model looks at one photo at
-    // a time, so this needs a vision model that accepts two images, behind an OpenAI-compatible chat completions API.
+    // Google Gemini through its Interactions API (see README.md): cautious written observations of one photo, and
+    // comparisons of two. Requests go from the RISE server only; the key is never sent to browsers.
+    'gemini' => [
+        'api_url' => env('GEMINI_API_URL') ?: 'https://generativelanguage.googleapis.com/v1beta',
+        'api_key' => env('GEMINI_API_KEY'),
+        'model' => env('GEMINI_MODEL'),
+        'api_revision' => env('GEMINI_API_REVISION') ?: '2026-05-20',
+        'thinking_level' => env('GEMINI_THINKING_LEVEL'),
+        'timeout' => (int) (env('GEMINI_TIMEOUT') ?: 45),
+        'max_image_side' => (int) (env('GEMINI_MAX_IMAGE_SIDE') ?: 1536),
+    ],
+
+    // Optional AI comparison of two photos. Roboflow's crack model looks at one photo at a time, so this needs a vision
+    // model that accepts two images: Google Gemini (above), or one behind an OpenAI-compatible chat completions API.
     'photo_comparison' => [
-        'driver' => env('RISE_COMPARISON_DRIVER'),                // "openai_compatible" turns it on
+        'driver' => env('RISE_COMPARISON_DRIVER'),                // "gemini" or "openai_compatible"; unset uses Gemini once it is set up
         'provider_name' => env('RISE_COMPARISON_PROVIDER_NAME'),  // shown to residents before anything is sent
         'api_url' => env('RISE_COMPARISON_API_URL'),
         'api_key' => env('RISE_COMPARISON_API_KEY'),

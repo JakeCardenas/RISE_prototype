@@ -1,8 +1,9 @@
 import { formatLocal } from './local-time';
+import { checkPhoto } from './photo-quality';
 
 // Enhances the Add photo form: a drop zone with "Choose photo" and (on touch screens) "Take photo",
 // a preview to review before saving (for a follow-up, with the last photo faded over it to check the framing),
-// checks before uploading, and upload progress. The last photo of the chosen point is shown as a framing guide:
+// quick checks of light, focus and framing (see photo-quality.js), checks before uploading, and upload progress. The last photo of the chosen point is shown as a framing guide:
 // full size beside the steps on wide screens, and as a small guide above the picker on phones.
 // Without JavaScript it stays a normal form post with a standard file control.
 
@@ -43,6 +44,12 @@ function enhance(form) {
     const ghostControls = find('[data-ghost-controls]');
     const ghostRange = find('[data-ghost-range]');
     const ghostValue = find('[data-ghost-value]');
+    const quality = find('[data-quality]');
+    const qualityHeading = find('[data-quality-heading]');
+    const qualityList = find('[data-quality-list]');
+    const qualityNote = find('[data-quality-note]');
+    const qualityActions = find('[data-quality-actions]');
+    const qualityStatus = find('[data-quality-status]');
     const status = find('[data-upload-status]');
     const statusText = find('[data-upload-text]');
     const statusPercent = find('[data-upload-percent]');
@@ -53,6 +60,8 @@ function enhance(form) {
     let selectedFile = null;
     let previewUrl = null;
     let previewShown = false;
+    let qualityRun = 0;
+    const baselines = new Map();
 
     // Swap the plain file control for the drop zone; offer the camera shortcut only on touch screens
     nativePicker.classList.add('sr-only');
@@ -69,6 +78,14 @@ function enhance(form) {
     changeButton.addEventListener('click', () => {
         clearSelection();
         pickerButton().focus();
+    });
+
+    find('[data-quality-retake]').addEventListener('click', () => changeButton.click());
+
+    find('[data-quality-keep]').addEventListener('click', () => {
+        qualityActions.hidden = true;
+        qualityNote.textContent = 'You’re keeping this photo. You can still change it before saving.';
+        quality.focus();
     });
 
     // Drag and drop is an extra way in; the buttons always work too
@@ -201,6 +218,7 @@ function enhance(form) {
             heicNotice.hidden = !heic;
             previewShown = canPreview;
             showGhost();
+            showQuality();
 
             dropzone.hidden = true;
             preview.hidden = false;
@@ -237,6 +255,7 @@ function enhance(form) {
         preview.hidden = true;
         dropzone.hidden = false;
         showGhost();
+        showQuality();
     }
 
     // A point with photos takes a follow-up; a point without one takes its baseline
@@ -264,6 +283,67 @@ function enhance(form) {
 
         showReference();
         showGhost();
+        showQuality();
+    }
+
+    // Checks the photo on screen, and for a follow-up compares its framing with the spot's baseline. A HEIC photo the
+    // browser can't draw isn't checked. Advice only: saving is never blocked.
+    function showQuality() {
+        const run = ++qualityRun;
+
+        quality.hidden = true;
+        qualityStatus.textContent = '';
+
+        if (!previewShown) {
+            return;
+        }
+
+        loadBaseline(pointSelect.selectedOptions[0]?.dataset.baselineSrc).then((baseline) => {
+            if (run !== qualityRun || !previewShown) {
+                return;
+            }
+
+            let issues;
+
+            try {
+                issues = checkPhoto(previewImage, baseline);
+            } catch {
+                return; // a browser that can't read the photo's pixels simply skips the checks
+            }
+
+            const clear = issues.length === 0;
+
+            quality.querySelector('[data-quality-icon="issues"]').hidden = clear;
+            quality.querySelector('[data-quality-icon="clear"]').hidden = !clear;
+            qualityHeading.textContent = clear ? 'No obvious problems with light, focus or framing' : 'This photo may be hard to compare';
+            qualityList.replaceChildren(...issues.map((text) => Object.assign(document.createElement('li'), { textContent: text })));
+            qualityList.hidden = clear;
+            qualityNote.textContent = clear
+                ? 'These quick checks can miss things, so look at the photo yourself too.'
+                : 'These quick checks run in your browser and can be wrong. Retake the photo, or keep it if it shows the spot clearly.';
+            qualityActions.hidden = clear;
+            quality.hidden = false;
+            qualityStatus.textContent = clear
+                ? 'Photo check: no obvious problems found.'
+                : `Photo check: ${issues.length === 1 ? 'one possible problem' : `${issues.length} possible problems`}, listed below the photo.`;
+        });
+    }
+
+    function loadBaseline(source) {
+        if (!source) {
+            return Promise.resolve(null);
+        }
+
+        if (!baselines.has(source)) {
+            baselines.set(source, new Promise((resolve) => {
+                const image = new Image();
+                image.onload = () => resolve(image);
+                image.onerror = () => resolve(null);
+                image.src = source;
+            }));
+        }
+
+        return baselines.get(source);
     }
 
     // The previous photo can be faded over a new one only when both can be shown in this browser

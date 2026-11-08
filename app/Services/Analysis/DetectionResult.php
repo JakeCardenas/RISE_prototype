@@ -2,7 +2,8 @@
 
 namespace App\Services\Analysis;
 
-// Normalized model output: region coordinates are fractions (0–1) of the analysed image's width and height
+// Normalized model output: region coordinates are fractions (0–1) of the analysed image's width and height. A provider
+// that describes the photo in words adds an Observation; one that only marks regions leaves it out.
 final class DetectionResult
 {
     /**
@@ -14,5 +15,6 @@ final class DetectionResult
         public readonly array $regions,
         public readonly ?string $modelVersion,
         public readonly ?string $requestId,
+        public readonly ?Observation $observation = null,
     ) {}
 }

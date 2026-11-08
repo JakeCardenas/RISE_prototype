@@ -46,10 +46,27 @@ return [
     |--------------------------------------------------------------------------
     |
     | Which CrackDetector implementation runs when a resident asks for an AI
-    | analysis. Provider credentials live in config/services.php.
+    | analysis: "gemini" or "roboflow". Left unset, RISE uses Gemini once
+    | it is configured, and Roboflow otherwise. Provider credentials live
+    | in config/services.php.
     |
     */
 
-    'analysis_provider' => env('RISE_ANALYSIS_PROVIDER', 'roboflow'),
+    'analysis_provider' => env('RISE_ANALYSIS_PROVIDER'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Evaluation workspace
+    |--------------------------------------------------------------------------
+    |
+    | Limits for the researcher-only capstone evaluation: how many labelled
+    | images one run may send, and how many provider requests a run makes
+    | per minute, so a large run stays inside the provider's rate limits.
+    |
+    */
+
+    'evaluation_max_items' => (int) (env('RISE_EVALUATION_MAX_ITEMS') ?: 200),
+
+    'evaluation_per_minute' => (int) (env('RISE_EVALUATION_PER_MINUTE') ?: 6),
 
 ];

@@ -32,5 +32,9 @@
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
+        <env name="GEMINI_API_KEY" value=""/>
+        <env name="GEMINI_MODEL" value=""/>
+        <env name="RISE_ANALYSIS_PROVIDER" value=""/>
+        <env name="RISE_COMPARISON_DRIVER" value=""/>
     </php>
 </phpunit>

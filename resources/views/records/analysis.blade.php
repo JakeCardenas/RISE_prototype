@@ -1,12 +1,25 @@
 @use('App\Models\PhotoAnalysis')
+@use('App\Services\Analysis\AnalysisProviders')
+@use('App\Support\AiWording')
 @use('App\Support\Observations')
 
 @php
     $position = Observations::position($record);
+    $isBaseline = $position === 1;
     $status = $analysis?->status;
+    $state = $analysis?->displayState();
     $regions = $status === PhotoAnalysis::COMPLETED ? $analysis->regions() : [];
-    $providerName = Str::headline($analysis?->provider ?? $detector->name());
+    $observation = $analysis?->observation();
+    // A provider that describes the photo in words (Gemini) gets the written result; a region detector's stays as it was
+    $written = $status === PhotoAnalysis::COMPLETED && isset($analysis->result['observation']);
+    $provider = $analysis?->provider ?? $detector->name();
+    $providerName = AnalysisProviders::label($provider);
     $stillWaiting = $analysis?->isWaiting() && $analysis->requested_at->lt(now()->subMinutes(2));
+    $nextActions = [
+        'retake_photo' => [route('records.create', ['point' => $point]), 'Take another photo', 'camera'],
+        'compare_with_baseline' => $isBaseline ? null : [route('points.compare', [$point, 'second' => $record->id]), 'Compare with baseline', 'columns'],
+        'keep_monitoring' => [route('points.show', $point), 'Plan the next photo', 'calendar'],
+    ];
 @endphp
 
 <x-layout title="AI photo analysis">
@@ -70,6 +83,8 @@
                     </svg>
                     Possible crack-like area detected by AI
                 </p>
+            @elseif ($written)
+                <p class="meta mt-3">{{ $providerName }} doesn’t mark where anything is, so your photo is shown exactly as you saved it.</p>
             @endif
         </section>
 
@@ -81,7 +96,14 @@
                         <h2 id="result-heading" class="flex items-center gap-2.5 section-title">
                             <x-icon name="scan" class="text-primary" /> Check this photo with AI
                         </h2>
-                        <p class="mt-3">An image model can mark areas in this photo that look like cracks, for you to review alongside your own notes.</p>
+                        @if ($provider === 'gemini')
+                            <p class="mt-3">
+                                An AI model can describe what it sees in this photo in a few cautious sentences, and say whether the photo’s
+                                quality limits what it can see. It doesn’t mark, measure or judge anything.
+                            </p>
+                        @else
+                            <p class="mt-3">An image model can mark areas in this photo that look like cracks, for you to review alongside your own notes.</p>
+                        @endif
 
                         {{-- What leaves RISE, stated before the button that sends it --}}
                         <h3 class="mt-6 text-sm font-semibold text-ink">If you choose Analyze with AI</h3>
@@ -91,14 +113,31 @@
                                 <dd>{{ $providerName }}, the image-analysis service set up for this RISE server</dd>
                             </div>
                             <div>
-                                <dt>What is sent</dt>
-                                <dd class="font-medium">A copy of this photo, resized, with location and other embedded details removed</dd>
+                                <dt>Model</dt>
+                                <dd>{{ $detector->modelId() }}</dd>
                             </div>
                             <div>
-                                <dt>Training</dt>
+                                <dt>What is sent</dt>
                                 <dd class="font-medium">
-                                    RISE turns off {{ $providerName }}’s option to add the photo to a training dataset; how {{ $providerName }}
-                                    handles the copy is covered by its own terms
+                                    A copy of this photo, resized to at most {{ number_format($detector->maxImageSide()) }} pixels on its longest side, with
+                                    location and other embedded details removed{{ $provider === 'gemini' ? ', plus RISE’s standard instructions for the model' : '' }}
+                                </dd>
+                            </div>
+                            <div>
+                                <dt>Not sent</dt>
+                                <dd class="font-medium">Your notes, the spot’s name or room, or your account details</dd>
+                            </div>
+                            <div>
+                                <dt>Storage and training</dt>
+                                <dd class="font-medium">
+                                    @if ($provider === 'gemini')
+                                        RISE asks Gemini not to save this request for follow-up questions (store: false). How Google handles the copy,
+                                        including how long it’s kept and whether it may be used to improve Google’s products, depends on the terms of
+                                        the Gemini API account this server uses
+                                    @else
+                                        RISE turns off {{ $providerName }}’s option to add the photo to a training dataset; how {{ $providerName }}
+                                        handles the copy is covered by its own terms
+                                    @endif
                                 </dd>
                             </div>
                         </dl>
@@ -113,7 +152,7 @@
                             <x-icon name="info" class="text-primary" /> AI analysis isn’t set up
                         </h2>
                         <p class="mt-3">This RISE server doesn’t have an image-analysis provider configured, so nothing has been sent anywhere. Your photo is saved and you can keep using it.</p>
-                        <p class="mt-3 text-sm text-muted">The person who runs RISE can add a provider key; see the README.</p>
+                        <p class="mt-3 text-sm text-muted">The person who runs RISE can add a Google Gemini or Roboflow key; see the README.</p>
                     @endif
                 </div>
             @elseif ($analysis->isWaiting())
@@ -128,7 +167,7 @@
                         </li>
                         <li class="flex items-center gap-2.5 font-medium">
                             <x-icon name="clock" class="size-4 text-primary" />
-                            {{ $status === PhotoAnalysis::PROCESSING ? 'Sent to '.$providerName.', waiting for the result' : 'Waiting for the analysis queue to pick it up' }}
+                            {{ $state === 'processing' ? 'Sent to '.$providerName.', waiting for the result' : 'Waiting for the analysis queue to pick it up' }}
                         </li>
                     </ol>
                     <p class="mt-5 text-sm text-muted">This usually takes under a minute. You can leave this page; the result will be saved here.</p>
@@ -141,33 +180,113 @@
                     <h2 id="result-heading" class="flex items-center gap-2.5 text-[1.1875rem] font-semibold tracking-[-0.015em] text-danger">
                         <x-icon name="alert-circle" /> The analysis didn’t finish
                     </h2>
+                    <p class="mt-1.5 text-sm font-semibold text-muted">
+                        {{ ['timed_out' => 'Timed out', 'retryable' => 'Can be tried again later', 'failed' => 'Needs a settings change'][$state] }}
+                    </p>
                     <p class="mt-3">{{ $analysis->failureMessage() }} Your photo is still saved.</p>
                     <form method="POST" action="{{ route('records.analysis.store', $record) }}" class="mt-6">
                         @csrf
-                        <button type="submit" class="btn btn-primary"><x-icon name="refresh" /> Try again</button>
+                        <button type="submit" @class(['btn', 'btn-primary' => $state !== 'failed', 'btn-secondary' => $state === 'failed'])><x-icon name="refresh" /> Try again</button>
                     </form>
-                    <p class="mt-3 text-sm text-muted">Trying again sends a copy of this photo, without location details, to {{ $providerName }} again.</p>
+                    <p class="mt-3 text-sm text-muted">
+                        @if ($state === 'failed')
+                            It may not work until the person who runs RISE changes the settings.
+                        @endif
+                        Trying again sends a copy of this photo, without location details, to {{ $providerName }} again.
+                    </p>
+                </div>
+            @elseif (! $observation)
+                {{-- A stored result that no longer passes RISE's checks is never shown --}}
+                <div class="sheet sheet-solid p-5 sm:p-7">
+                    <h2 id="result-heading" class="section-title">This result can’t be shown</h2>
+                    <p class="mt-3">RISE couldn’t check the stored result, so it isn’t shown. You can ask for a new analysis.</p>
+                    <form method="POST" action="{{ route('records.analysis.store', $record) }}" class="mt-5">
+                        @csrf
+                        <button type="submit" class="btn btn-secondary"><x-icon name="refresh" /> Try again</button>
+                    </form>
                 </div>
             @else
+                @if ($written)
+                    {{-- The bounded finding first, in RISE's own words; then the model's words, clearly marked as such --}}
+                    <div class="sheet sheet-solid p-5 sm:p-7">
+                        <h2 id="result-heading" class="flex items-start gap-3 section-title">
+                            <x-icon name="scan" class="mt-0.5 shrink-0 text-primary" />
+                            <span>{{ AiWording::finding($observation->finding) }}</span>
+                        </h2>
+                        <p class="mt-3">{{ AiWording::findingNote($observation->finding) }}</p>
+
+                        <h3 class="mt-6 text-sm font-semibold text-ink">In the model’s words</h3>
+                        @if ($observation->summary || $observation->observations)
+                            <div class="mt-2 rounded-2xl border border-line bg-canvas px-4 py-3">
+                                @if ($observation->summary)
+                                    <p>{{ $observation->summary }}</p>
+                                @endif
+                                @if ($observation->observations)
+                                    <ul @class(['list-disc space-y-1.5 pl-5 marker:text-primary', 'mt-2' => $observation->summary])>
+                                        @foreach ($observation->observations as $sentence)
+                                            <li>{{ $sentence }}</li>
+                                        @endforeach
+                                    </ul>
+                                @endif
+                            </div>
+                            <p class="meta mt-2">RISE leaves out any sentence with a measurement, cause, judgement or advice. What’s left can still be wrong.</p>
+                        @else
+                            <p class="mt-2 text-muted">The model gave no description that RISE could show.</p>
+                        @endif
+
+                        <h3 class="mt-6 text-sm font-semibold text-ink">Photo quality</h3>
+                        @if ($observation->limitations)
+                            <ul class="mt-2 space-y-2 text-[0.9375rem]">
+                                @foreach ($observation->limitations as $limitation)
+                                    <li class="flex items-start gap-2.5"><x-icon name="alert-triangle" class="mt-0.5 size-4 shrink-0 text-primary" /> {{ AiWording::limitation($limitation) }}</li>
+                                @endforeach
+                            </ul>
+                        @else
+                            <p class="mt-2 text-muted">The model didn’t note anything about this photo that limits what it can see.</p>
+                        @endif
+                    </div>
+                @else
+                    <div class="sheet sheet-solid p-5 sm:p-7">
+                        <h2 id="result-heading" class="flex items-start gap-3 section-title">
+                            {{-- The same magenta as the outlines, so the heading and the photo read together --}}
+                            <span class="mt-[0.3125rem] size-3.5 shrink-0 rounded-[3px] border-2 border-mark bg-mark/20" aria-hidden="true"></span>
+                            <span>
+                                @if ($regions)
+                                    The model marked possible crack-like areas.
+                                @else
+                                    The model did not mark an area in this photo. It can still miss cracks.
+                                @endif
+                            </span>
+                        </h2>
+                        @if ($regions)
+                            <p class="mt-3">
+                                {{ trans_choice('{1} One area is|[2,*] :count areas are', count($regions)) }} outlined in magenta. Switch to the original photo
+                                to look at the surface without markings, and compare it with your own observations.
+                            </p>
+                        @else
+                            <p class="mt-3">Keep photographing this spot over time and compare the photos yourself.</p>
+                        @endif
+                    </div>
+                @endif
+
+                {{-- One step from RISE's fixed list; the model picks it, RISE words it --}}
                 <div class="sheet sheet-solid p-5 sm:p-7">
-                    <h2 id="result-heading" class="flex items-start gap-3 section-title">
-                        {{-- The same magenta as the outlines, so the heading and the photo read together --}}
-                        <span class="mt-[0.3125rem] size-3.5 shrink-0 rounded-[3px] border-2 border-mark bg-mark/20" aria-hidden="true"></span>
-                        <span>
-                            @if ($regions)
-                                The model marked possible crack-like areas.
-                            @else
-                                The model did not mark an area in this photo. It can still miss cracks.
-                            @endif
-                        </span>
-                    </h2>
-                    @if ($regions)
-                        <p class="mt-3">
-                            {{ trans_choice('{1} One area is|[2,*] :count areas are', count($regions)) }} outlined in magenta. Switch to the original photo
-                            to look at the surface without markings, and compare it with your own observations.
-                        </p>
-                    @else
-                        <p class="mt-3">Keep photographing this spot over time and compare the photos yourself.</p>
+                    <h2 class="section-title">Suggested next step</h2>
+                    <p class="mt-2">{{ AiWording::nextStep($observation->nextStep, $isBaseline) }}</p>
+
+                    @if ($action = $nextActions[$observation->nextStep] ?? null)
+                        <a href="{{ $action[0] }}" class="btn btn-secondary mt-4"><x-icon :name="$action[2]" /> {{ $action[1] }}</a>
+                    @elseif ($observation->nextStep === 'add_note')
+                        {{-- The resident's own note: saved only when they press Save note --}}
+                        <form method="POST" action="{{ route('records.note.update', $record) }}" class="mt-4">
+                            @csrf
+                            @method('PATCH')
+                            <label for="note" class="field-label">Your note for this photo</label>
+                            <textarea id="note" name="note" rows="4" maxlength="1000" class="field-control" aria-describedby="note-error"
+                                @error('note') aria-invalid="true" @enderror>{{ old('note', $record->note) }}</textarea>
+                            <x-field-error for="note" />
+                            <button type="submit" class="btn btn-secondary mt-3">Save note</button>
+                        </form>
                     @endif
                 </div>
 
@@ -183,17 +302,32 @@
                             <dd>{{ $providerName }}</dd>
                         </div>
                         <div>
+                            <dt>Status</dt>
+                            <dd>Completed</dd>
+                        </div>
+                        <div>
+                            <dt>Requested</dt>
+                            <dd><x-local-time :time="$analysis->requested_at" /></dd>
+                        </div>
+                        <div>
                             <dt>Analysed</dt>
                             <dd><x-local-time :time="$analysis->completed_at" /></dd>
                         </div>
-                        <div>
-                            <dt>Areas marked</dt>
-                            <dd>{{ $analysis->region_count }}</dd>
-                        </div>
-                        <div>
-                            <dt>Score threshold</dt>
-                            <dd>{{ number_format($analysis->confidence_threshold, 2) }}</dd>
-                        </div>
+                        @if ($written)
+                            <div class="col-span-2">
+                                <dt>Model score</dt>
+                                <dd class="font-medium">None. This model gives no calibrated score, so RISE doesn’t show one.</dd>
+                            </div>
+                        @else
+                            <div>
+                                <dt>Areas marked</dt>
+                                <dd>{{ $analysis->region_count }}</dd>
+                            </div>
+                            <div>
+                                <dt>Score threshold</dt>
+                                <dd>{{ number_format($analysis->confidence_threshold, 2) }}</dd>
+                            </div>
+                        @endif
                     </dl>
 
                     @if ($regions)
@@ -217,10 +351,17 @@
                     @endif
 
                     <p class="mt-5 text-sm text-muted">
-                        Benchmark figures published for this model come from its own test images. They aren’t RISE results and don’t show how
-                        it performs on photos of homes like yours.
+                        @if ($written)
+                            No person has checked this result. Any accuracy figures for this model come from a separate evaluation on
+                            human-labelled research photos.
+                        @else
+                            Benchmark figures published for this model come from its own test images. They aren’t RISE results and don’t show how
+                            it performs on photos of homes like yours.
+                        @endif
                     </p>
                 </div>
+
+                <x-ai-feedback :action="route('analyses.feedback', $analysis)" :feedback="$analysis->feedback" class="sheet sheet-solid p-5 sm:p-7" />
             @endif
         </section>
     </div>

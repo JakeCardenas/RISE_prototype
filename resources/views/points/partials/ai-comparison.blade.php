@@ -1,3 +1,5 @@
+@use('App\Models\PhotoComparison')
+@use('App\Support\AiWording')
 @use('App\Support\Observations')
 
 {{--
@@ -22,12 +24,38 @@
                 Still waiting. The queue may not be running; the person who runs RISE can start it with <code class="rounded bg-well px-1 py-0.5 text-[0.8125rem]">php artisan queue:work</code>.
             </p>
         </div>
-    @elseif ($aiComparison?->status === \App\Models\PhotoComparison::COMPLETED)
-        <p class="meta mt-1">From {{ $aiComparison->provider }} · <x-local-time :time="$aiComparison->completed_at" /></p>
+    @elseif ($aiComparison?->status === PhotoComparison::COMPLETED)
+        @php($comparability = $aiComparison->comparability())
+        <p class="meta mt-1">
+            From {{ $aiComparison->provider }}{{ $aiComparison->model_version ? ' · model '.$aiComparison->model_version : '' }} ·
+            <x-local-time :time="$aiComparison->completed_at" />
+        </p>
+
+        {{-- Whether the photos can be compared at all comes first; when they can't, no surface differences are listed --}}
+        @if ($comparability)
+            <div class="mt-4 flex items-start gap-3 rounded-2xl border border-line bg-canvas px-4 py-3">
+                <x-icon :name="$comparability === 'comparable' ? 'check-circle' : 'alert-triangle'" class="mt-0.5 size-4 shrink-0 text-primary" />
+                <div class="min-w-0">
+                    <p class="font-semibold text-ink">{{ AiWording::comparability($comparability) }}</p>
+                    @if ($aiComparison->comparisonLimits())
+                        <ul class="mt-1.5 list-disc space-y-1 pl-5 text-sm marker:text-muted">
+                            @foreach ($aiComparison->comparisonLimits() as $limit)
+                                <li>{{ AiWording::comparisonLimit($limit) }}</li>
+                            @endforeach
+                        </ul>
+                    @endif
+                    @if ($comparability !== 'comparable')
+                        <p class="mt-2 text-sm text-muted">Photos taken from the same place, distance and light are easier to compare.</p>
+                    @endif
+                </div>
+            </div>
+        @endif
 
         <div class="mt-5 grid gap-x-8 gap-y-5 sm:grid-cols-2">
             @foreach ([
-                ['Possible visible differences', $aiComparison->visibleDifferences(), 'It didn’t point out a clear difference. That doesn’t mean nothing changed.'],
+                ['Possible visible differences', $aiComparison->visibleDifferences(), $comparability === 'not_comparable'
+                    ? 'None are listed, because the model couldn’t compare these photos reliably.'
+                    : 'It didn’t point out a clear difference. That doesn’t mean nothing changed.'],
                 ['Possible photo differences', $aiComparison->photoDifferences(), 'It didn’t point out differences in angle, distance or light.'],
             ] as [$heading, $items, $none])
                 <div>
@@ -81,8 +109,11 @@
                 </form>
             </details>
         @endif
+
+        <x-ai-feedback id="ai-feedback" subject="comparison" :level="3" :action="route('ai-comparisons.feedback', $aiComparison)"
+            :feedback="$aiComparison->feedback" class="mt-6 border-t border-line pt-6" />
     @else
-        @if ($aiComparison?->status === \App\Models\PhotoComparison::FAILED)
+        @if ($aiComparison?->status === PhotoComparison::FAILED)
             <p class="mt-2 flex items-start gap-2 font-medium text-danger" role="alert">
                 <x-icon name="alert-circle" class="mt-0.5 size-4 shrink-0" /> {{ $aiComparison->failureMessage() }}
             </p>
@@ -96,7 +127,7 @@
         <dl class="title-block mt-4 grid-cols-1">
             <div>
                 <dt>Sent to</dt>
-                <dd>{{ $comparer->name() }}</dd>
+                <dd>{{ $comparer->name() }}{{ $comparer->modelId() ? ' · model '.$comparer->modelId() : '' }}</dd>
             </div>
             <div>
                 <dt>What is sent</dt>
@@ -105,6 +136,18 @@
             <div>
                 <dt>Not sent</dt>
                 <dd class="font-medium">Your notes, your spot’s name or your account details</dd>
+            </div>
+            <div>
+                <dt>Storage and training</dt>
+                <dd class="font-medium">
+                    @if ($comparer instanceof \App\Services\Comparison\GeminiPhotoComparer)
+                        RISE asks Gemini not to save this request for follow-up questions (store: false). How Google handles the copies,
+                        including how long they’re kept and whether they may be used to improve Google’s products, depends on the terms of
+                        the Gemini API account this server uses
+                    @else
+                        How {{ $comparer->name() }} handles the copies is covered by its own terms
+                    @endif
+                </dd>
             </div>
         </dl>
 

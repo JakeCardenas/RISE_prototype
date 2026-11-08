@@ -1,6 +1,6 @@
-// Adds a before/after wipe to the Compare page. Without JavaScript only the side-by-side view exists.
+// Adds a before/after wipe and an overlay to the Compare page. Without JavaScript only the side-by-side view exists.
 // The divider follows a drag anywhere on the photo (mouse, pen or touch) and a hidden range input,
-// so arrow keys, Page Up/Down and Home/End move it too.
+// so arrow keys, Page Up/Down and Home/End move it too. The overlay fades the later photo with a range input.
 
 const wipe = document.querySelector('[data-wipe]');
 
@@ -38,4 +38,22 @@ if (wipe) {
     });
 
     set(50);
+}
+
+const overlay = document.querySelector('[data-overlay]');
+
+if (overlay) {
+    const input = document.querySelector('[data-overlay-input]');
+    const value = document.querySelector('[data-overlay-value]');
+
+    document.querySelector('[data-compare-overlay]').hidden = false;
+
+    const show = () => {
+        overlay.style.setProperty('--overlay', String(input.valueAsNumber / 100));
+        value.textContent = `${input.value}%`;
+        input.setAttribute('aria-valuetext', `Later photo at ${input.value}% over the earlier photo`);
+    };
+
+    input.addEventListener('input', show);
+    show();
 }

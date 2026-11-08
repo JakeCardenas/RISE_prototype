@@ -32,6 +32,12 @@
             <p class="mt-0.5 truncate font-semibold text-ink">{{ $user->name }}</p>
             <p class="truncate text-sm text-muted">{{ $user->email }}</p>
         </div>
+        @if ($user->is_researcher)
+            {{-- Only researcher accounts see the capstone evaluation workspace --}}
+            <a href="{{ route('research.index') }}" class="menu-item border-t border-ink/10" @if (request()->routeIs('research.*')) aria-current="page" @endif>
+                <x-icon name="list" class="size-4 text-muted" /> Evaluation workspace
+            </a>
+        @endif
         <form action="{{ route('logout') }}" method="POST" class="border-t border-ink/10 pt-1.5">
             @csrf
             <button type="submit" class="menu-item">

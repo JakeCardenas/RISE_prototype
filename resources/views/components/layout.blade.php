@@ -91,9 +91,8 @@
                     </ul>
                 </nav>
 
-                <div class="border-t border-ink/10 px-2.5 pt-2.5 pb-4">
+                <div class="border-t border-ink/10 px-2.5 pt-2.5 pb-3">
                     <x-account-menu placement="rail" />
-                    <x-disclosure class="mt-3 px-3 text-muted" />
                 </div>
             </aside>
 
@@ -143,9 +142,6 @@
 
                         {{ $slot }}
                     </div>
-
-                    {{-- On phones the disclosure closes the page; on desktop it sits in the sidebar --}}
-                    <x-disclosure @class(['mt-14 border-t border-ink/10 pt-5 text-muted', 'lg:hidden' => auth()->check()]) />
                 </div>
             </main>
         </div>

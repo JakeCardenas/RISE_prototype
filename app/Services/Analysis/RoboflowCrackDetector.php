@@ -110,6 +110,11 @@ class RoboflowCrackDetector implements CrackDetector
         $width = $this->positive($image['width'] ?? null) ?? $sent->width;
         $height = $this->positive($image['height'] ?? null) ?? $sent->height;
 
+        // Locations are only kept when they refer to the copy RISE sent: the same shape, give or take rounding
+        if (abs($width / $height - $sent->width / $sent->height) > 0.02 * $sent->width / $sent->height) {
+            throw new AnalysisFailed('invalid_response');
+        }
+
         // Some responses give outline points on a smaller mask grid
         $grid = is_array($data['mask_metadata'] ?? null) ? $data['mask_metadata'] : [];
         $onGrid = ($grid['coordinate_system'] ?? null) === 'mask_grid';
@@ -120,6 +125,15 @@ class RoboflowCrackDetector implements CrackDetector
 
         foreach (array_slice($data['predictions'], 0, self::MAX_REGIONS) as $prediction) {
             if (! is_array($prediction) || ! $this->allNumeric($prediction, ['x', 'y', 'width', 'height', 'confidence'])) {
+                continue;
+            }
+
+            // Roboflow boxes are centre-based; each edge is clipped to the photo, and a box with no area is left out
+            $left = $this->fraction(($prediction['x'] - $prediction['width'] / 2) / $width);
+            $top = $this->fraction(($prediction['y'] - $prediction['height'] / 2) / $height);
+            $box = [$left, $top, round($this->fraction(($prediction['x'] + $prediction['width'] / 2) / $width) - $left, 5), round($this->fraction(($prediction['y'] + $prediction['height'] / 2) / $height) - $top, 5)];
+
+            if ($box[2] <= 0 || $box[3] <= 0) {
                 continue;
             }
 
@@ -134,13 +148,7 @@ class RoboflowCrackDetector implements CrackDetector
             $regions[] = [
                 'label' => Str::limit(preg_replace('/[^\pL\pN _-]/u', '', (string) ($prediction['class'] ?? '')), 40, ''),
                 'score' => round(min(1, max(0, (float) $prediction['confidence'])), 3),
-                // Roboflow boxes are centre-based
-                'box' => [
-                    $this->fraction(($prediction['x'] - $prediction['width'] / 2) / $width),
-                    $this->fraction(($prediction['y'] - $prediction['height'] / 2) / $height),
-                    $this->fraction($prediction['width'] / $width),
-                    $this->fraction($prediction['height'] / $height),
-                ],
+                'box' => $box,
                 // Only the model's own outline is drawn; without one, the box is shown instead
                 'polygon' => count($polygon) >= 3 ? $this->thin($polygon) : null,
             ];

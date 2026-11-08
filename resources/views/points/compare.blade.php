@@ -87,6 +87,7 @@
                         <div class="segmented glass">
                             <label class="segmented-option"><input type="radio" name="compare-view" value="side" class="sr-only" checked> <x-icon name="columns" class="size-4" /> Side by side</label>
                             <label class="segmented-option"><input type="radio" name="compare-view" value="wipe" class="sr-only"> <x-icon name="split" class="size-4" /> Before/after slider</label>
+                            <label class="segmented-option"><input type="radio" name="compare-view" value="overlay" class="sr-only"> <x-icon name="layers" class="size-4" /> Overlay</label>
                         </div>
                     </fieldset>
                 </div>
@@ -131,6 +132,30 @@
                     <p class="meta mt-3">
                         Drag across the photo, or use the arrow keys, to move the divider. If the photos weren’t taken from the same place,
                         edges won’t line up even where nothing changed.
+                    </p>
+                </div>
+
+                {{-- The later photo faded over the earlier one; both stay whole and unblurred --}}
+                <div class="mt-5" data-compare-overlay hidden>
+                    <div class="sheet sheet-solid p-3 sm:p-5">
+                        <div class="overlay-view mx-auto" data-overlay style="aspect-ratio: {{ round($ratio, 4) }}; width: min(100%, calc(62svh * {{ round($ratio, 4) }}))">
+                            <x-record-photo :record="$earlier" :alt="$labelFor($earlier).' photo of '.$point->label.', saved '.$earlier->submitted_at->format('j M Y')" />
+                            <x-record-photo :record="$later" :alt="$labelFor($later).' photo of '.$point->label.', saved '.$later->submitted_at->format('j M Y').', faded over the earlier photo'" class="overlay-later" />
+                            <span class="wipe-label left-3" aria-hidden="true">{{ $labelFor($earlier) }} · underneath</span>
+                            <span class="wipe-label right-3" aria-hidden="true">{{ $labelFor($later) }} · on top</span>
+                        </div>
+                        <div class="mx-auto mt-4 max-w-md">
+                            <div class="flex items-center justify-between gap-3">
+                                <label for="overlay-opacity" class="font-semibold text-ink">{{ $labelFor($later) }} on top</label>
+                                <output for="overlay-opacity" class="text-sm font-semibold text-heading tabular-nums" data-overlay-value>50%</output>
+                            </div>
+                            <input type="range" id="overlay-opacity" min="0" max="100" step="5" value="50" class="mt-2 block h-11 w-full cursor-pointer"
+                                aria-describedby="overlay-help" data-overlay-input>
+                        </div>
+                    </div>
+                    <p id="overlay-help" class="meta mt-3">
+                        Fades the later photo over the earlier one. RISE doesn’t line the photos up or measure anything, so if they weren’t
+                        taken from the same place, edges won’t match even where nothing changed.
                     </p>
                 </div>
             </div>

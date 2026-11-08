@@ -4,6 +4,7 @@ namespace App\Services\Comparison;
 
 use App\Services\Analysis\AnalysisFailed;
 use App\Services\Photos\ProcessedImage;
+use App\Support\CautiousText;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
@@ -24,13 +25,10 @@ class OpenAiCompatiblePhotoComparer implements PhotoComparer
         You compare two photos of the same spot on a wall, ceiling or floor in a home. Photo A is earlier; photo B is later.
         Describe only what you can see, in plain, cautious words such as "appears" or "may".
         Reply with JSON only, shaped like {"visible_differences": [], "photo_differences": []}.
-        visible_differences: up to 3 short sentences about possible visible changes to the surface between A and B, such as a line that looks longer or more visible, or a new mark. Use an empty list if you can't see a clear difference.
+        visible_differences: up to 3 short sentences about differences in what is visible on the surface between A and B, such as a line or mark seen in one photo but not the other, or one that looks darker or more visible. Use an empty list if you can't see a clear difference.
         photo_differences: up to 3 short sentences about differences in how the photos were taken: camera angle, distance, framing, lighting, shadows or focus.
-        Never estimate a size or measurement. Never name a cause. Never judge severity, risk or urgency. Never suggest repairs or inspections. Never say whether the home is safe or unsafe. Keep each sentence under 25 words.
+        Never say that anything grew, widened, lengthened, spread, worsened or improved. Never estimate a size or measurement. Never name a cause. Never judge severity, risk or urgency. Never suggest repairs or inspections. Never say whether the home is safe or unsafe. Keep each sentence under 25 words.
         TEXT;
-
-    // Whatever the model says, RISE never shows measurements, causes, severity, risk, repair or safety claims
-    private const NEVER_SHOWN = '/\b\d+(?:[.,]\d+)?\s*(?:mm|cm|m|millimet\w*|centimet\w*|inch\w*|in|ft|feet|foot|%|percent)\b|\b(?:safe|unsafe|safety|danger\w*|hazard\w*|risk\w*|sever\w*|serious\w*|critical\w*|urgent\w*|emergenc\w*|structur\w*|foundation\w*|collaps\w*|repair\w*|fix\w*|seal\w*|engineer\w*|inspect\w*|settl\w*|subsid\w*|caus\w*|because|due to|unstable|stable|worse\w*|worsen\w*|deteriorat\w*)\b/i';
 
     /** @param  array<string, mixed>  $config  config('services.photo_comparison') */
     public function __construct(private readonly array $config) {}
@@ -103,8 +101,8 @@ class OpenAiCompatiblePhotoComparer implements PhotoComparer
         $model = data_get($response->json(), 'model');
 
         return new ComparisonResult(
-            visible: $this->clean($parsed['visible_differences'] ?? []),
-            photo: $this->clean($parsed['photo_differences'] ?? []),
+            visible: CautiousText::sentences($parsed['visible_differences'] ?? [], self::MAX_ITEMS, self::MAX_LENGTH),
+            photo: CautiousText::sentences($parsed['photo_differences'] ?? [], self::MAX_ITEMS, self::MAX_LENGTH),
             modelVersion: is_string($model) ? Str::limit($model, 120, '') : $this->modelId(),
         );
     }
@@ -135,27 +133,5 @@ class OpenAiCompatiblePhotoComparer implements PhotoComparer
         $end = strrpos($content, '}');
 
         return $start !== false && $end > $start ? substr($content, $start, $end - $start + 1) : $content;
-    }
-
-    /** @return list<string> Plain sentences, without control characters, limited in number and length */
-    private function clean(mixed $items): array
-    {
-        $clean = [];
-
-        foreach (is_array($items) ? $items : [] as $item) {
-            $text = is_string($item) ? trim((string) preg_replace('/[\p{C}\s]+/u', ' ', $item)) : '';
-
-            if ($text === '' || preg_match(self::NEVER_SHOWN, $text)) {
-                continue;
-            }
-
-            $clean[] = Str::limit($text, self::MAX_LENGTH);
-
-            if (count($clean) === self::MAX_ITEMS) {
-                break;
-            }
-        }
-
-        return $clean;
     }
 }

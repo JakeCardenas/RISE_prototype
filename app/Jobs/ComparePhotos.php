@@ -59,7 +59,12 @@ class ComparePhotos implements ShouldQueue
 
             $comparison->forceFill([
                 'status' => PhotoComparison::COMPLETED,
-                'result' => ['visible' => $result->visible, 'photo' => $result->photo],
+                'result' => array_filter([
+                    'visible' => $result->visible,
+                    'photo' => $result->photo,
+                    'comparability' => $result->comparability,
+                    'limitations' => $result->comparability ? $result->limitations : null,
+                ], fn ($value) => $value !== null),
                 'model_version' => $result->modelVersion,
                 'completed_at' => now(),
             ])->save();
