@@ -9,6 +9,9 @@
     $areaCount = $areas->keys()->reject(fn ($area) => $area === HomeAreas::UNSORTED)->count();
     $photoAlt = fn ($record, $point, $position) => Observations::label($position).' photo of '.$point->label.', saved '.$record->submitted_at->format('j M Y');
 
+    // The next-step card offers "Plan a follow-up date" itself in these cases, so the general hint below stays away
+    $offersPlanning = $stepPoint && in_array($step, ['follow-up', 'compare'], true) && ! $stepPoint->follow_up_on;
+
     // Photos already in the next-step card aren't shown again under Recent photos
     $featured = collect([$stepLatest?->id, ($nextStep['baseline'] ?? null)?->id])->filter();
     $recent = $recent->reject(fn ($item) => $featured->contains($item['record']->id))->values();
@@ -56,17 +59,15 @@
 
     {{-- The one step most worth taking now, chosen from the resident's own records --}}
     <section aria-labelledby="next-step-title" @class(['sheet grid overflow-hidden', 'md:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]' => $step !== 'start', 'lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]' => $step === 'start'])>
-        {{-- The picture: the photo to match or compare, or an empty frame where the first photo will go --}}
+        {{-- The picture: the photo to match or compare; before there is one, a drawing of a spot framed on a house wall, never an empty frame --}}
         @if ($step === 'start')
             <div class="grid-paper hidden items-end justify-center bg-well/50 px-6 pt-8 sm:flex sm:px-12 lg:pt-14" aria-hidden="true">
                 <x-house-sketch class="max-w-xs text-heading/75 [--sketch-accent:var(--color-primary)] lg:max-w-md" />
             </div>
         @elseif ($step === 'baseline')
-            <a href="{{ route('records.create', ['point' => $stepPoint]) }}" class="hidden items-center justify-center bg-well p-5 sm:p-6 md:flex" tabindex="-1" aria-hidden="true">
-                <span class="viewfinder flex aspect-[4/3] w-full max-w-xs flex-col items-center justify-center gap-2 rounded-photo bg-surface text-sm font-semibold text-primary ring-1 ring-line [--vf-color:var(--color-brand-bright)] [--vf-gap:-0.5rem] [--vf-length:0.875rem]">
-                    <x-icon name="camera" class="size-7" /> Baseline photo
-                </span>
-            </a>
+            <div class="grid-paper hidden items-end justify-center bg-well/50 px-8 pt-8 md:flex lg:px-12" aria-hidden="true">
+                <x-house-sketch class="max-w-xs text-heading/75 [--sketch-accent:var(--color-primary)]" />
+            </div>
         @elseif ($step === 'compare')
             <div class="grid grid-cols-2 items-center gap-3 bg-well p-3 [--photo-max:10rem] sm:p-4 md:[--photo-max:17rem]">
                 @foreach ([[$nextStep['baseline'], 1], [$stepLatest, $stepPoint->photo_records_count]] as [$record, $position])
@@ -245,7 +246,7 @@
                     @endforeach
                 </ul>
             </section>
-        @elseif ($planned->isEmpty() && $photoCount > 0)
+        @elseif ($planned->isEmpty() && $photoCount > 0 && ! $offersPlanning)
             <p class="mt-5 flex items-start gap-2 text-sm text-muted">
                 <x-icon name="calendar" class="mt-0.5 size-4 shrink-0 text-primary" />
                 Plan a follow-up date on a spot’s page, and it shows here when the day is close.
@@ -277,71 +278,62 @@
             </section>
         @endif
 
-        {{-- Spots by room or area, as a short list: any spot is a tap away --}}
-        <section id="areas" aria-labelledby="areas-heading" class="mt-10 scroll-mt-28">
+        {{-- Every spot, a tap away. Once the resident has chosen rooms, spots are grouped by room; any without one
+             gather under "Other spots". Until then they are one plain list, with a note on how grouping works. --}}
+        <section id="spots" aria-labelledby="spots-heading" class="mt-10 scroll-mt-28">
             <div class="section-head">
-                <h2 id="areas-heading" class="section-title">My home areas</h2>
+                <h2 id="spots-heading" class="section-title">Your spots</h2>
                 <a href="{{ route('points.create') }}" class="btn btn-quiet -mr-3 -mb-1.5 text-sm">
                     <x-icon name="plus" class="size-4" /> New spot
                 </a>
             </div>
 
-            @if ($areas->count() > 1)
-                <nav aria-label="Jump to an area" class="mt-3 flex flex-wrap gap-2">
-                    @foreach ($areas as $area => $group)
-                        <a href="#{{ HomeAreas::anchor($area) }}" class="glass-thin inline-flex min-h-10 items-center gap-2 rounded-full px-3.5 text-sm font-semibold text-ink">
-                            {{ $area }} <span class="text-muted tabular-nums">{{ $group->count() }}</span>
-                        </a>
-                    @endforeach
-                </nav>
-            @elseif ($areaCount === 0)
-                <p class="meta mt-1">Give each spot a room when you edit it, and it’s grouped here.</p>
-            @endif
+            @if ($areaCount === 0)
+                <p class="meta mt-1">Choose a room when you edit a spot, and your spots are grouped by room here.</p>
+                <div class="mt-4 grid items-start gap-3 lg:grid-cols-2">
+                    <ul role="list" class="sheet divide-y divide-line overflow-hidden">
+                        @foreach ($areas->first() as $point)
+                            <li><x-spot-row :point="$point" :today="$today" /></li>
+                        @endforeach
+                    </ul>
+                </div>
+            @else
+                @if ($areas->count() > 1)
+                    <nav aria-label="Jump to a room" class="mt-3 flex flex-wrap gap-2">
+                        @foreach ($areas as $area => $group)
+                            <a href="#{{ HomeAreas::anchor($area) }}" class="glass-thin inline-flex min-h-10 items-center gap-2 rounded-full px-3.5 text-sm font-semibold text-ink">
+                                {{ $area }} <span class="text-muted tabular-nums">{{ $group->count() }}</span>
+                            </a>
+                        @endforeach
+                    </nav>
+                @endif
 
-            <div class="mt-4 grid items-start gap-3 lg:grid-cols-2">
-                @foreach ($areas as $area => $group)
-                    <section id="{{ HomeAreas::anchor($area) }}" aria-labelledby="{{ HomeAreas::anchor($area) }}-title" class="sheet scroll-mt-28 overflow-hidden">
-                        <div class="flex min-h-12 items-center justify-between gap-3 border-b border-line py-1.5 pr-2 pl-4 sm:pl-5">
-                            <h3 id="{{ HomeAreas::anchor($area) }}-title" class="flex items-center gap-2 font-semibold text-heading">
-                                <x-icon name="home" class="size-4 text-primary" /> {{ $area }}
-                                <span class="text-sm font-normal text-muted tabular-nums">{{ $group->count() }}</span>
-                            </h3>
-                            @unless ($area === HomeAreas::UNSORTED)
-                                <a href="{{ route('points.create', ['area' => $area]) }}" class="btn btn-quiet min-h-10 px-3 text-sm">
-                                    <x-icon name="plus" class="size-4" /> Add <span class="sr-only">a spot in {{ $area }}</span>
-                                </a>
-                            @endunless
-                        </div>
-                        <ul role="list" class="divide-y divide-line">
-                            @foreach ($group as $point)
-                                <li>
-                                    <a href="{{ route('points.show', $point) }}" class="flex min-h-14 items-center gap-3 px-4 py-2.5 hover:bg-well/60 sm:px-5">
-                                        <span class="min-w-0 flex-1">
-                                            <span class="block font-semibold break-words text-heading">{{ $point->label }}</span>
-                                            <span class="meta block">
-                                                @if ($point->latestRecord)
-                                                    {{ trans_choice('{1} 1 photo|[2,*] :count photos', $point->photo_records_count) }}
-                                                    · latest <x-local-time :time="$point->latestRecord->submitted_at" format="short" />
-                                                @else
-                                                    No photos yet
-                                                @endif
-                                            </span>
-                                        </span>
-                                        @if ($point->follow_up_on && $point->photo_records_count)
-                                            @if (FollowUps::status($point->follow_up_on, $today) === 'later')
-                                                <span class="meta inline-flex shrink-0 items-center gap-1.5"><x-icon name="calendar" class="size-4" /> <x-calendar-date :date="$point->follow_up_on" format="calendarshort" /></span>
-                                            @else
-                                                <x-follow-up-tag :date="$point->follow_up_on" :today="$today" class="shrink-0" />
-                                            @endif
-                                        @endif
-                                        <x-icon name="chevron-right" class="size-4 shrink-0 text-muted" />
+                <div class="mt-4 grid items-start gap-3 lg:grid-cols-2">
+                    @foreach ($areas as $area => $group)
+                        @php($unsorted = $area === HomeAreas::UNSORTED)
+                        <section id="{{ HomeAreas::anchor($area) }}" aria-labelledby="{{ HomeAreas::anchor($area) }}-title" class="sheet scroll-mt-28 overflow-hidden">
+                            <div class="flex min-h-12 items-center justify-between gap-3 border-b border-line py-1.5 pr-2 pl-4 sm:pl-5">
+                                <h3 id="{{ HomeAreas::anchor($area) }}-title" class="flex items-center gap-2 font-semibold text-heading">
+                                    <x-icon :name="$unsorted ? 'list' : 'home'" class="size-4 text-primary" /> {{ $area }}
+                                    <span class="text-sm font-normal text-muted tabular-nums">{{ $group->count() }}</span>
+                                </h3>
+                                @if ($unsorted)
+                                    <p class="meta pr-3">No room chosen</p>
+                                @else
+                                    <a href="{{ route('points.create', ['area' => $area]) }}" class="btn btn-quiet min-h-10 px-3 text-sm">
+                                        <x-icon name="plus" class="size-4" /> Add <span class="sr-only">a spot in {{ $area }}</span>
                                     </a>
-                                </li>
-                            @endforeach
-                        </ul>
-                    </section>
-                @endforeach
-            </div>
+                                @endif
+                            </div>
+                            <ul role="list" class="divide-y divide-line">
+                                @foreach ($group as $point)
+                                    <li><x-spot-row :point="$point" :today="$today" /></li>
+                                @endforeach
+                            </ul>
+                        </section>
+                    @endforeach
+                </div>
+            @endif
         </section>
     @endif
 </x-layout>

@@ -32,7 +32,7 @@
     <div class="backdrop" aria-hidden="true">
         <picture>
             <source srcset="{{ asset('images/montana-misora-background.webp') }}" type="image/webp">
-            <img src="{{ asset('images/montana-misora-background.png') }}" alt="" width="1578" height="996" decoding="async">
+            <img src="{{ asset('images/montana-misora-background.jpg') }}" alt="" width="848" height="477" decoding="async">
         </picture>
     </div>
 
@@ -45,7 +45,7 @@
             <aside class="glass-thick fixed top-3 bottom-3 left-3 z-30 hidden w-68 flex-col rounded-glass lg:flex">
                 <div class="px-4 pt-5 pb-4">
                     <a href="{{ route('overview') }}" class="-m-1 flex items-center gap-3 rounded-2xl p-1">
-                        <x-rise-mark class="size-10" />
+                        <span class="brand-tile size-10"><x-rise-mark class="size-7.5" /></span>
                         <span>
                             <span class="block text-[1.0625rem] leading-none font-bold tracking-[0.14em] text-heading">RISE</span>
                             <span class="mt-1.5 block text-xs leading-none font-medium text-muted">Home photo journal</span>
@@ -101,7 +101,7 @@
             <header class="fixed inset-x-3 top-[calc(env(safe-area-inset-top)+0.5rem)] z-30 lg:hidden">
                 <div class="glass relative mx-auto flex h-14 max-w-3xl items-center justify-between gap-2 rounded-full pr-1.5 pl-4">
                     <a href="{{ route('overview') }}" class="flex min-h-11 items-center gap-2.5 rounded-full pr-2 text-heading">
-                        <x-rise-mark class="size-8" />
+                        <span class="brand-tile size-8"><x-rise-mark class="size-6" /></span>
                         <span class="brand-word text-base leading-none font-bold tracking-[0.14em]">RISE</span>
                     </a>
                     <span class="compact-title" aria-hidden="true" data-compact-title></span>
@@ -111,9 +111,9 @@
             <div class="edge-fade-top" aria-hidden="true"></div>
         @else
             <header class="fixed inset-x-3 top-[calc(env(safe-area-inset-top)+0.5rem)] z-30">
-                <div class="glass mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 rounded-full pr-1.5 pl-4">
+                <div class="glass glass-dense mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 rounded-full pr-1.5 pl-4">
                     <a href="{{ route('login') }}" class="flex min-h-11 items-center gap-2.5 rounded-full pr-2 text-heading">
-                        <x-rise-mark class="size-8" />
+                        <span class="brand-tile size-8"><x-rise-mark class="size-6" /></span>
                         <span class="text-base leading-none font-bold tracking-[0.14em]">RISE</span>
                     </a>
                     <nav aria-label="Account" class="flex items-center gap-1">
@@ -132,12 +132,13 @@
             ])>
                 <div class="mx-auto max-w-6xl">
                     <div @class(['max-w-2xl' => $width === 'narrow'])>
+                        {{-- Confirmations float on the backdrop as thin glass, above the page they belong to --}}
                         @if (session('success'))
-                            <x-alert>{{ session('success') }}</x-alert>
+                            <x-alert class="glass-thin">{{ session('success') }}</x-alert>
                         @endif
 
                         @if (session('info'))
-                            <x-alert type="info">{{ session('info') }}</x-alert>
+                            <x-alert type="info" class="glass-thin">{{ session('info') }}</x-alert>
                         @endif
 
                         {{ $slot }}

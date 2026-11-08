@@ -11,8 +11,8 @@ class HomeAreas
 {
     public const PRESETS = ['Bedroom', 'Living room', 'Kitchen', 'Hallway', 'Bathroom', 'Exterior'];
 
-    // The heading for points the resident hasn't filed under an area
-    public const UNSORTED = 'No area yet';
+    // The heading for points the resident hasn't filed under a room or area, shown once some other spot has one
+    public const UNSORTED = 'Other spots';
 
     // Groups points by area: the preset rooms in their usual order, then the resident's own names, then unsorted points
     public static function group(Collection $points): Collection
@@ -29,7 +29,7 @@ class HomeAreas
                     $preset !== false => sprintf('0%02d', $preset),
                     default => '1'.$key,
                 };
-            })
+            }, SORT_STRING) // as text: compared as numbers, "002" and "2" tie and unsorted points could land mid-list
             ->mapWithKeys(fn (Collection $group, string $key) => [$key === '' ? self::UNSORTED : self::name($group->first()->area) => $group->values()]);
     }
 

@@ -30,25 +30,20 @@
     </x-page-header>
 
     @if (! $baseline)
-        {{-- No photo yet: explain the passport and start it with a baseline --}}
-        <section aria-labelledby="passport-title" class="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
-            <div class="sheet grid grid-cols-2 gap-3 p-4 sm:gap-5 sm:p-6" aria-hidden="true">
-                @foreach (['Baseline', 'Follow-up 1'] as $slot)
-                    <div>
-                        <div @class([
-                            'viewfinder flex aspect-[4/3] flex-col items-center justify-center gap-2 rounded-photo bg-canvas text-center ring-1 ring-line [--vf-gap:-0.5rem] [--vf-length:0.875rem]',
-                            '[--vf-color:var(--color-primary)] text-primary' => $loop->first,
-                            '[--vf-color:var(--color-line-strong)] text-muted' => ! $loop->first,
-                        ])>
-                            <x-icon :name="$loop->first ? 'camera' : 'image'" class="size-6" />
-                        </div>
-                        <p class="mt-2.5 text-sm font-semibold text-heading">{{ $slot }}</p>
-                        <p class="meta">{{ $loop->first ? 'Your first photo of this spot' : 'Taken later, from the same place' }}</p>
-                    </div>
-                @endforeach
+        {{-- No photo yet: one compact first step, with the passport explaining how the record grows --}}
+        <section aria-labelledby="first-photo-title" class="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+            <div class="sheet flex flex-wrap items-center gap-x-5 gap-y-4 p-5 sm:p-6">
+                <span class="viewfinder flex size-16 shrink-0 items-center justify-center rounded-photo bg-canvas text-primary ring-1 ring-line [--vf-color:var(--color-primary)] [--vf-gap:-0.375rem] [--vf-length:0.625rem]" aria-hidden="true">
+                    <x-icon name="camera" class="size-6" />
+                </span>
+                <div class="min-w-0 flex-1 basis-60">
+                    <h2 id="first-photo-title" class="text-lg font-semibold text-heading">Start with a baseline photo</h2>
+                    <p class="mt-1 text-muted">Your first photo of this spot. Later photos from the same place are compared with it.</p>
+                </div>
+                <a href="{{ $addUrl }}" class="btn btn-primary max-sm:w-full"><x-icon name="camera" /> Add baseline photo</a>
             </div>
 
-            <aside aria-labelledby="passport-title" class="rail rounded-sheet bg-rail p-5 text-rail-text shadow-sheet sm:p-6">
+            <aside aria-labelledby="passport-title" class="rail rail-glass rounded-sheet p-5 text-rail-text sm:p-6">
                 <h2 id="passport-title" class="text-lg font-semibold">Observation passport</h2>
                 <p class="mt-1.5 text-sm text-rail-muted">
                     Your photo record of this spot. The first photo is the baseline; later photos from the same place are follow-ups.
@@ -60,12 +55,11 @@
                         </li>
                     @endforeach
                 </ol>
-                <a href="{{ $addUrl }}" class="btn btn-on-rail mt-6 w-full"><x-icon name="camera" /> Add baseline photo</a>
             </aside>
         </section>
     @else
         <section aria-labelledby="pair-heading" class="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
-            {{-- The baseline beside the latest photo: the whole record at a glance --}}
+            {{-- The baseline beside the latest photo, or the baseline alone while its first follow-up is still to take --}}
             <div class="sheet overflow-hidden">
                 <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 border-b border-line px-4 py-3 sm:px-5">
                     <h2 id="pair-heading" class="font-semibold text-heading">{{ $hasFollowUp ? 'Baseline and latest photo' : 'Baseline photo' }}</h2>
@@ -74,20 +68,20 @@
                     @endif
                 </div>
 
-                <div class="grid grid-cols-2">
-                    <figure class="flex min-w-0 flex-col border-r border-line p-3 sm:p-4">
-                        <a href="{{ Observations::entryUrl($point, $baseline, 1) }}" class="frame-link flex flex-1 items-center">
-                            <x-record-photo :record="$baseline" loading="eager"
-                                :alt="'Baseline photo of '.$point->label.', saved '.$baseline->submitted_at->format('j M Y')"
-                                class="print h-auto max-h-[26rem] w-full object-contain" />
-                        </a>
-                        <figcaption class="mt-3">
-                            <span class="flex items-center gap-1.5 text-sm font-semibold text-heading"><x-icon name="flag" class="size-4" /> Baseline</span>
-                            <span class="meta block">Saved <x-local-time :time="$baseline->submitted_at" format="date" /></span>
-                        </figcaption>
-                    </figure>
+                @if ($hasFollowUp)
+                    <div class="grid grid-cols-2">
+                        <figure class="flex min-w-0 flex-col border-r border-line p-3 sm:p-4">
+                            <a href="{{ Observations::entryUrl($point, $baseline, 1) }}" class="frame-link flex flex-1 items-center">
+                                <x-record-photo :record="$baseline" loading="eager"
+                                    :alt="'Baseline photo of '.$point->label.', saved '.$baseline->submitted_at->format('j M Y')"
+                                    class="print h-auto max-h-[26rem] w-full object-contain" />
+                            </a>
+                            <figcaption class="mt-3">
+                                <span class="flex items-center gap-1.5 text-sm font-semibold text-heading"><x-icon name="flag" class="size-4" /> Baseline</span>
+                                <span class="meta block">Saved <x-local-time :time="$baseline->submitted_at" format="date" /></span>
+                            </figcaption>
+                        </figure>
 
-                    @if ($hasFollowUp)
                         <figure class="flex min-w-0 flex-col p-3 sm:p-4">
                             <a href="{{ Observations::entryUrl($point, $latest, $recordCount) }}" class="frame-link flex flex-1 items-center">
                                 <x-record-photo :record="$latest" loading="eager"
@@ -101,33 +95,43 @@
                                 <span class="meta block">Saved <x-local-time :time="$latest->submitted_at" format="date" /></span>
                             </figcaption>
                         </figure>
-                    @else
-                        {{-- Only the baseline so far: an honest empty frame where the first follow-up will go --}}
-                        <div class="flex min-w-0 flex-col p-3 sm:p-4">
-                            <a href="{{ $addUrl }}" @if ($baseline->viewWidth() && $baseline->viewHeight()) style="aspect-ratio: {{ $baseline->viewWidth() }} / {{ $baseline->viewHeight() }}" @endif
-                                class="viewfinder flex max-h-[26rem] w-full flex-1 flex-col items-center justify-center gap-2 rounded-photo bg-canvas px-3 text-center text-sm font-semibold text-primary ring-1 ring-line [--vf-color:var(--color-primary)] [--vf-gap:-0.5rem] [--vf-length:0.875rem] hover:bg-well">
-                                <x-icon name="camera" class="size-6" /> Add follow-up photo
-                            </a>
-                            <p class="mt-3 text-sm font-semibold text-heading">Follow-up 1</p>
-                            <p class="meta">Not taken yet</p>
-                        </div>
-                    @endif
-                </div>
+                    </div>
 
-                <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 border-t border-line px-4 py-3 sm:px-5">
-                    @if ($hasFollowUp)
+                    <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 border-t border-line px-4 py-3 sm:px-5">
                         <p class="max-w-md text-sm text-muted">Changes in light, angle or distance can look like change, so look closely before deciding anything.</p>
                         <a href="{{ route('points.compare', [$point, 'first' => $baseline->id, 'second' => $latest->id]) }}" class="btn btn-secondary">
                             <x-icon name="split" class="size-4" /> Compare before and after
                         </a>
-                    @else
-                        <p class="text-sm text-muted">You can compare once this spot has a follow-up photo.</p>
-                    @endif
-                </div>
+                    </div>
+                @else
+                    {{-- Only the baseline so far: the photo whole and centred, then the first follow-up as one compact step --}}
+                    <figure class="bg-well/60 p-3 sm:p-5">
+                        <a href="{{ Observations::entryUrl($point, $baseline, 1) }}" class="frame-link mx-auto block w-fit max-w-full">
+                            <x-record-photo :record="$baseline" loading="eager"
+                                :alt="'Baseline photo of '.$point->label.', saved '.$baseline->submitted_at->format('j M Y')"
+                                class="print h-auto max-h-[30rem] w-auto max-w-full object-contain" />
+                        </a>
+                        <figcaption class="mt-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-sm">
+                            <span class="inline-flex items-center gap-1.5 font-semibold text-heading"><x-icon name="flag" class="size-4" /> Baseline</span>
+                            <span class="meta">Saved <x-local-time :time="$baseline->submitted_at" format="date" /></span>
+                        </figcaption>
+                    </figure>
+
+                    <div class="flex flex-wrap items-center gap-x-4 gap-y-3 border-t border-line px-4 py-4 sm:px-5">
+                        <span class="viewfinder flex size-11 shrink-0 items-center justify-center rounded-control bg-canvas text-primary ring-1 ring-line [--vf-color:var(--color-primary)] [--vf-gap:-0.3125rem] [--vf-length:0.5rem]" aria-hidden="true">
+                            <x-icon name="camera" class="size-5" />
+                        </span>
+                        <div class="min-w-0 flex-1 basis-52">
+                            <p class="font-semibold text-heading">Follow-up 1 <span class="font-normal text-muted">· not taken yet</span></p>
+                            <p class="meta">Stand where you took the baseline and match its view, then compare the two.</p>
+                        </div>
+                        <a href="{{ $addUrl }}" class="btn btn-primary max-sm:w-full"><x-icon name="camera" /> Add follow-up photo</a>
+                    </div>
+                @endif
             </div>
 
             {{-- The passport: what this record holds, and the next step --}}
-            <aside aria-labelledby="passport-title" class="rail rounded-sheet bg-rail p-5 text-rail-text shadow-sheet sm:p-6">
+            <aside aria-labelledby="passport-title" class="rail rail-glass rounded-sheet p-5 text-rail-text sm:p-6">
                 <h2 id="passport-title" class="text-lg font-semibold">Observation passport</h2>
                 <p class="mt-1.5 text-sm text-rail-muted">One baseline photo, then follow-ups from the same place.</p>
 
@@ -200,9 +204,12 @@
                         </div>
                     </details>
 
-                    <p class="mt-3 text-sm text-rail-muted">Go back to the same place. RISE shows your last photo so you can match the view.</p>
-                    <a href="{{ $addUrl }}" class="btn btn-on-rail mt-4 w-full"><x-icon name="camera" /> Add follow-up photo</a>
-                    <a href="{{ route('points.report', $point) }}" class="mt-2 flex min-h-11 items-center justify-center gap-2 rounded-control text-sm font-semibold hover:bg-rail-soft">
+                    {{-- With only a baseline, the photo card above already carries this step --}}
+                    @if ($hasFollowUp)
+                        <p class="mt-3 text-sm text-rail-muted">Go back to the same place. RISE shows your last photo so you can match the view.</p>
+                        <a href="{{ $addUrl }}" class="btn btn-on-rail mt-4 w-full"><x-icon name="camera" /> Add follow-up photo</a>
+                    @endif
+                    <a href="{{ route('points.report', $point) }}" @class(['flex min-h-11 items-center justify-center gap-2 rounded-control text-sm font-semibold hover:bg-white/10', 'mt-2' => $hasFollowUp, 'mt-3' => ! $hasFollowUp])>
                         <x-icon name="printer" class="size-4" /> Print or save report
                     </a>
                     @if ($recordCount > Observations::PER_REPORT_PART)

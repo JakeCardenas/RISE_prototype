@@ -18,8 +18,8 @@
 <x-layout :title="'Observation report · '.$point->label" bare>
     <div class="min-h-dvh px-4 pt-[max(1.5rem,env(safe-area-inset-top))] pb-12 sm:px-8 sm:pt-10 print:min-h-0 print:p-0">
         {{-- The toolbar floats on glass while the report scrolls; it never prints --}}
-        <div class="glass sticky top-3 z-20 mx-auto mb-6 flex max-w-[52rem] flex-wrap items-center justify-between gap-x-6 gap-y-2 rounded-[1.75rem] py-1.5 pr-1.5 pl-2 print:hidden">
-            <a href="{{ route('points.show', $point) }}" class="inline-flex min-h-11 min-w-0 flex-1 items-center gap-1 rounded-full pr-3 pl-2 text-sm font-semibold text-primary hover:bg-white/60">
+        <div class="glass glass-dense sticky top-3 z-20 mx-auto mb-6 flex max-w-[52rem] flex-wrap items-center justify-between gap-x-6 gap-y-2 rounded-[1.75rem] py-1.5 pr-1.5 pl-2 print:hidden">
+            <a href="{{ route('points.show', $point) }}" class="inline-flex min-h-11 min-w-0 flex-1 items-center gap-1 rounded-full pr-3 pl-2 text-sm font-semibold text-primary hover:bg-white/12">
                 <x-icon name="chevron-left" class="size-[1.125rem]" /> <span class="truncate">Back to {{ $point->label }}</span>
             </a>
             <div class="flex flex-wrap items-center gap-x-4 gap-y-2">

@@ -34,6 +34,16 @@ test('a point without photos asks for a baseline and has no report link', functi
         ->assertDontSee(route('points.report', $point));
 });
 
+test('a point with only its baseline shows the first follow-up as one compact step, with nothing to compare yet', function () {
+    $point = MonitoringPoint::factory()->create();
+    PhotoRecord::factory()->for($point)->create();
+
+    $this->actingAs($point->user)->get(route('points.show', $point))
+        ->assertOk()
+        ->assertSeeInOrder(['Baseline photo', 'Follow-up 1', 'not taken yet', 'Add follow-up photo', 'Observation passport'])
+        ->assertDontSee('Compare before and after');
+});
+
 test('photo dates are labelled by source: saved to RISE, photo taken (unverified) and, for older uploads, file modified', function () {
     $point = MonitoringPoint::factory()->create();
     PhotoRecord::factory()->for($point)->create(['submitted_at' => now()->subDays(3), 'file_modified_at' => now()->subDays(4)]);

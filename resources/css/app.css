@@ -4,7 +4,7 @@
 @source '../../storage/framework/views/*.php';
 
 /*
- | RISE: a home observation journal in a Liquid Glass material, set against a dimmed photo of Montana Misora Homes.
+ | RISE: a home observation journal in a Liquid Glass material, set against a dimmed image of Montana Misora Homes.
  | Reading surfaces (sheets, forms, the report) stay opaque white. Light glass is kept for chrome that floats over the
  | backdrop: navigation, menus, toolbars and secondary controls. Resident photos are never blurred, tinted or cropped.
  | The green and orange are sampled from a screenshot of the Montana Homes website and adjusted for contrast; they are
@@ -123,40 +123,35 @@
 }
 
 /*
- | Glass material. Three thicknesses: thin for small controls, regular for bars and toolbars, thick for the sidebar.
- | Each catches light along its top edge. Fills stay at or above 0.66 so text inside keeps 4.5:1 over the darkest part
- | of the backdrop. Without backdrop-filter, or when the viewer asks for less transparency or more contrast, the same
- | surfaces become near-solid white.
+ | Glass material: clear glass in the manner of Apple's Liquid Glass. The photo behind stays visible as soft shapes
+ | through the blur; a green-charcoal tint keeps white text crisp over the brightest part of the backdrop, a faint
+ | reflection crosses the top, and a light rim catches along the edge. Three thicknesses: thin for small floating
+ | controls, regular for bars, toolbars and the sign-in window, thick for the sidebar. Without backdrop-filter, or when
+ | the viewer asks for less transparency or more contrast, glass becomes solid deep green.
  */
 :root {
-    --glass-thin: rgb(255 255 255 / 0.66);
-    --glass-regular: rgb(255 255 255 / 0.7);
-    --glass-thick: rgb(255 255 255 / 0.8);
-    --glass-blur-thin: 16px;
-    --glass-blur-regular: 26px;
-    --glass-blur-thick: 40px;
-    --glass-saturate: 1.8;
-    --glass-edge: linear-gradient(
-        165deg,
-        rgb(255 255 255 / 0.95),
-        rgb(255 255 255 / 0.45) 30%,
-        rgb(255 255 255 / 0.2) 62%,
-        rgb(255 255 255 / 0.75)
-    );
-    --glass-highlight: inset 0 1px 0 rgb(255 255 255 / 0.85), inset 0 -1px 0 rgb(255 255 255 / 0.3),
-        inset 0 0 18px rgb(255 255 255 / 0.12);
+    --glass-thin: rgb(14 28 20 / 0.3);
+    --glass-regular: rgb(14 28 20 / 0.22);
+    --glass-thick: rgb(14 28 20 / 0.32);
+    --glass-blur-thin: 14px;
+    --glass-blur-regular: 24px;
+    --glass-blur-thick: 32px;
+    --glass-saturate: 1.6;
+    --glass-brightness: 1.12;
+    --glass-sheen: linear-gradient(160deg, rgb(255 255 255 / 0.13), rgb(255 255 255 / 0.04) 32%, rgb(255 255 255 / 0) 56%);
+    --glass-rim: inset 0 0 0 1px rgb(255 255 255 / 0.14), inset 0 1px 0 rgb(255 255 255 / 0.3);
 
     /*
-     | The dimming over the photo: dark green-charcoal, lightest through the middle. Together with the softened
-     | highlights on the photo itself, the brightest cloud stays dark enough for white text at 5.3:1 and
-     | --color-muted at 4.5:1, measured against this photo at phone, tablet and desktop crops.
+     | The dimming over the image: dark green-charcoal, lightest through the middle. Together with the softened
+     | highlights on the image itself, its brightest walls and sky stay dark enough for white text at 6.8:1 and
+     | --color-muted at 5.7:1, measured against this image at phone, tablet, desktop and wide crops.
      */
     --backdrop-veil: linear-gradient(
         180deg,
         rgb(11 22 16 / 0.6) 0%,
-        rgb(11 22 16 / 0.5) 38%,
-        rgb(11 22 16 / 0.56) 70%,
-        rgb(11 22 16 / 0.72) 100%
+        rgb(11 22 16 / 0.52) 38%,
+        rgb(11 22 16 / 0.62) 70%,
+        rgb(11 22 16 / 0.76) 100%
     );
 
     /* Floating chrome on phones: room kept clear above and below the page content */
@@ -166,26 +161,28 @@
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
     :root {
-        --glass-thin: rgb(255 255 255 / 0.95);
-        --glass-regular: rgb(255 255 255 / 0.97);
-        --glass-thick: rgb(255 255 255 / 0.98);
+        --glass-thin: rgb(22 41 30 / 0.96);
+        --glass-regular: rgb(22 41 30 / 0.96);
+        --glass-thick: rgb(20 37 27 / 0.97);
     }
 }
 
 @media (prefers-reduced-transparency: reduce) {
     :root {
-        --glass-thin: rgb(255 255 255 / 0.96);
-        --glass-regular: rgb(255 255 255 / 0.98);
-        --glass-thick: #fff;
+        --glass-thin: #1a2f23;
+        --glass-regular: #1a2f23;
+        --glass-thick: #172a1f;
+        --glass-sheen: none;
     }
 }
 
 @media (prefers-contrast: more) {
     :root {
-        --glass-thin: #fff;
-        --glass-regular: #fff;
-        --glass-thick: #fff;
-        --glass-edge: linear-gradient(var(--color-control), var(--color-control));
+        --glass-thin: #0d1712;
+        --glass-regular: #0d1712;
+        --glass-thick: #0d1712;
+        --glass-sheen: none;
+        --glass-rim: inset 0 0 0 1.5px rgb(255 255 255 / 0.8);
         --backdrop-veil: linear-gradient(rgb(8 16 11 / 0.92), rgb(8 16 11 / 0.92));
     }
 }
@@ -285,7 +282,7 @@
 
 @layer components {
     /*
-     | The environment: the Montana Misora Homes photo behind every page, dimmed by a green-charcoal veil, with a faint
+     | The environment: the Montana Misora Homes image behind every page, dimmed by a green-charcoal veil, with a faint
      | warm light above and a green glow below for the glass to pick up. A fixed layer as tall as the largest viewport,
      | rather than background-attachment: fixed, so phones neither repaint nor jump while scrolling. Decoration only:
      | it is never shown as a resident's photo.
@@ -301,19 +298,24 @@
         background-color: var(--color-backdrop);
     }
 
-    /* Softer highlights and a quieter blue sky, so the photo sits behind the green and orange instead of competing */
+    /*
+     | Softer highlights, a quieter blue sky and lower contrast, with a slight softness so the houses' window grids
+     | never compete with small text; the silhouettes of the houses stay recognisable. The softness also hides that the
+     | image (848 × 477) is enlarged to fill the screen. Scaled a little so the soft edges stay outside the screen.
+     */
     .backdrop img {
         width: 100%;
         height: 100%;
         object-fit: cover;
-        object-position: 62% 40%;
-        filter: saturate(0.8) contrast(0.88) brightness(0.82);
+        object-position: 50% 40%;
+        filter: saturate(0.78) contrast(0.8) brightness(0.8) blur(2px);
+        transform: scale(1.04);
     }
 
-    /* Portrait screens keep the nearer, larger houses in view */
+    /* Portrait screens keep the brown-and-white facades and their front doors in view */
     @media (orientation: portrait) {
         .backdrop img {
-            object-position: 74% 50%;
+            object-position: 38% 50%;
         }
     }
 
@@ -365,62 +367,83 @@
         scrollbar-color: #aebcaa transparent;
     }
 
-    /* Glass surfaces: a light fill, a light-catching edge and a soft floating shadow */
-    .glass,
-    .glass-thin,
-    .glass-thick,
-    .menu-panel {
-        --glass-fill: var(--glass-regular);
-        border: 1px solid transparent;
-        background:
-            linear-gradient(var(--glass-fill), var(--glass-fill)) padding-box,
-            var(--glass-edge) border-box;
-        box-shadow: var(--glass-highlight), var(--shadow-glass);
-    }
-
+    /*
+     | Glass surfaces: a tinted, blurred view of the photo behind, a faint reflection and a light rim. Text on glass is
+     | light, like text on the backdrop; the focus ring turns white.
+     */
     .glass,
     .glass-thin,
     .glass-thick {
-        --color-ink: #16201a;
-        --color-muted: #33423a; /* 5.1:1 on glass over the darkest backdrop */
-        --color-heading: #16201a;
-        --color-primary: #1b4426; /* deep green, readable on glass */
-        --color-focus: #1b4426;
-        --color-line: rgb(22 32 26 / 0.12);
-        --color-line-strong: rgb(22 32 26 / 0.24);
+        --glass-fill: var(--glass-regular);
+        --color-ink: #ffffff;
+        --color-muted: rgb(255 255 255 / 0.8);
+        --color-heading: #ffffff;
+        --color-primary: #dcf2d6;
+        --color-focus: #ffffff;
+        --color-line: rgb(255 255 255 / 0.16);
+        --color-line-strong: rgb(255 255 255 / 0.3);
+        background:
+            var(--glass-sheen),
+            linear-gradient(var(--glass-fill), var(--glass-fill));
+        box-shadow: var(--glass-rim), var(--shadow-glass);
         color: var(--color-ink);
         text-shadow: none;
     }
 
     .glass-thin {
         --glass-fill: var(--glass-thin);
-        box-shadow: var(--glass-highlight), 0 1px 2px rgb(6 16 10 / 0.2), 0 8px 20px -10px rgb(6 16 10 / 0.55);
+        box-shadow: var(--glass-rim), 0 1px 2px rgb(6 16 10 / 0.2), 0 8px 20px -10px rgb(6 16 10 / 0.55);
     }
 
     .glass-thick {
         --glass-fill: var(--glass-thick);
     }
 
-    /*
-     | Menus open from inside glass bars, where a browser can't blur the page behind a second glass layer, and light
-     | glass on light glass stops being legible; so menus are nearly opaque.
-     */
-    .menu-panel {
-        --glass-fill: rgb(255 255 255 / 0.97);
+    /* Glass that white content scrolls beneath with no edge fade, such as the report's sticky toolbar: a denser tint */
+    .glass-dense {
+        --glass-fill: rgb(14 28 20 / 0.72);
     }
 
+    /*
+     | Menus open from inside glass bars, where a browser can't blur the page behind a second glass layer, so they
+     | are nearly opaque white with dark text.
+     */
+    .menu-panel {
+        background-color: rgb(255 255 255 / 0.97);
+        box-shadow:
+            inset 0 0 0 1px rgb(22 32 26 / 0.08),
+            var(--shadow-glass);
+    }
+
+    /* The observation passport: deep-green glass, nearly opaque, so its text and date form read as on a solid card */
+    .rail-glass {
+        background:
+            var(--glass-sheen),
+            linear-gradient(rgb(23 58 37 / 0.9), rgb(23 58 37 / 0.9));
+        box-shadow: var(--glass-rim), var(--shadow-sheet);
+    }
+
+    /*
+     | The blur brightens a little, as clear glass gathers light. Measured in the browser over this backdrop at desktop
+     | and phone sizes, white text on glass stays at 9:1 or more and 80% white at 6.5:1 or more.
+     */
     @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-        .glass {
-            -webkit-backdrop-filter: blur(var(--glass-blur-regular)) saturate(var(--glass-saturate));
-            backdrop-filter: blur(var(--glass-blur-regular)) saturate(var(--glass-saturate));
+        .glass,
+        .rail-glass {
+            -webkit-backdrop-filter: blur(var(--glass-blur-regular)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness));
+            backdrop-filter: blur(var(--glass-blur-regular)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness));
         }
 
         .glass-thin {
-            -webkit-backdrop-filter: blur(var(--glass-blur-thin)) saturate(var(--glass-saturate));
-            backdrop-filter: blur(var(--glass-blur-thin)) saturate(var(--glass-saturate));
+            -webkit-backdrop-filter: blur(var(--glass-blur-thin)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness));
+            backdrop-filter: blur(var(--glass-blur-thin)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness));
         }
 
-        .glass-thick,
+        .glass-thick {
+            -webkit-backdrop-filter: blur(var(--glass-blur-thick)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness));
+            backdrop-filter: blur(var(--glass-blur-thick)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness));
+        }
+
         .menu-panel {
             -webkit-backdrop-filter: blur(var(--glass-blur-thick)) saturate(var(--glass-saturate));
             backdrop-filter: blur(var(--glass-blur-thick)) saturate(var(--glass-saturate));
@@ -431,13 +454,21 @@
         .glass,
         .glass-thin,
         .glass-thick,
-        .menu-panel {
+        .menu-panel,
+        .rail-glass {
             -webkit-backdrop-filter: none;
             backdrop-filter: none;
         }
+
+        .rail-glass {
+            background: var(--color-rail);
+        }
     }
 
-    /* Where page content passes under floating bars on phones, it fades into the backdrop instead of a hard line */
+    /*
+     | Where page content passes under the floating bars on phones, it fades into the dark backdrop first, like Apple's
+     | scroll edge effect: a white sheet never sits straight under the bars' light text, so the glass can stay clear.
+     */
     .edge-fade-top,
     .edge-fade-bottom {
         @apply pointer-events-none fixed inset-x-0 z-20 lg:hidden;
@@ -445,14 +476,66 @@
 
     .edge-fade-top {
         top: 0;
-        height: calc(env(safe-area-inset-top) + 3.5rem);
-        background: linear-gradient(to bottom, rgb(15 26 20 / 0.85), rgb(15 26 20 / 0));
+        height: calc(env(safe-area-inset-top) + 5rem);
+        background: linear-gradient(
+            to bottom,
+            rgb(15 26 20 / 0.92),
+            rgb(15 26 20 / 0.86) 60%,
+            rgb(15 26 20 / 0.5) 80%,
+            rgb(15 26 20 / 0)
+        );
     }
 
     .edge-fade-bottom {
         bottom: 0;
-        height: calc(env(safe-area-inset-bottom) + 4.5rem);
-        background: linear-gradient(to top, rgb(15 26 20 / 0.9), rgb(15 26 20 / 0));
+        height: calc(env(safe-area-inset-bottom) + 6rem);
+        background: linear-gradient(
+            to top,
+            rgb(15 26 20 / 0.94),
+            rgb(15 26 20 / 0.86) 50%,
+            rgb(15 26 20 / 0.55) 75%,
+            rgb(15 26 20 / 0)
+        );
+    }
+
+    /* The RISE mark on a white tile, like the app icon (public/favicon.svg), so its green holds up on glass */
+    .brand-tile {
+        display: grid;
+        flex-shrink: 0;
+        place-items: center;
+        border-radius: 22%;
+        background-color: #ffffff;
+        box-shadow:
+            0 0 0 1px rgb(6 16 10 / 0.08),
+            0 1px 2px rgb(6 16 10 / 0.2),
+            0 6px 14px -8px rgb(0 0 0 / 0.45);
+    }
+
+    /* On the sign-in window the tile leads, so it sits higher above the glass */
+    .brand-tile-hero {
+        box-shadow:
+            0 0 0 1px rgb(6 16 10 / 0.06),
+            0 1px 2px rgb(6 16 10 / 0.18),
+            0 18px 34px -16px rgb(0 0 0 / 0.6);
+    }
+
+    /* The sign-in window settles into place once, as a material arriving, not a page sliding in */
+    .glass-enter {
+        animation: rise-settle 460ms var(--ease-glass) both;
+    }
+
+    /*
+     | Confirmations ("Spot created", "You have been logged out"): a small capsule, announced politely, that never
+     | pushes the page aside. On white it is a light tint of the text colour; on the backdrop it is thin glass.
+     */
+    .status-pill {
+        @apply flex w-fit max-w-full items-start gap-2 rounded-[1.125rem] px-3.5 py-2 text-sm leading-5 font-medium text-ink;
+        animation: rise-pop 240ms var(--ease-out-quint) both;
+    }
+
+    .status-pill:not(.glass-thin) {
+        background-color: color-mix(in srgb, var(--color-ink) 6%, transparent);
+        box-shadow: inset 0 0 0 1px var(--color-line);
     }
 
     /* Type: a large, tight title; everything else at reading sizes */
@@ -590,9 +673,9 @@
         outline-color: var(--color-rail-accent);
     }
 
-    /* Navigation in the floating sidebar (desktop): a raised white capsule marks where you are */
+    /* Navigation in the floating glass sidebar (desktop): a lit glass capsule marks where you are */
     .rail-link {
-        @apply flex min-h-11 items-center gap-3 rounded-[0.875rem] px-3 text-[0.9375rem] font-medium text-ink select-none hover:bg-white/45;
+        @apply flex min-h-11 items-center gap-3 rounded-[0.875rem] px-3 text-[0.9375rem] font-medium text-ink select-none hover:bg-white/10;
         transition:
             background-color 160ms ease-out,
             box-shadow 160ms ease-out,
@@ -608,15 +691,15 @@
     }
 
     .rail-link[aria-current] {
-        @apply bg-white/95 font-semibold text-heading;
+        @apply bg-white/16 font-semibold text-heading;
         box-shadow:
-            0 1px 2px rgb(6 16 10 / 0.12),
-            0 6px 14px -8px rgb(6 16 10 / 0.4);
+            inset 0 1px 0 rgb(255 255 255 / 0.2),
+            0 1px 2px rgb(0 0 0 / 0.16);
     }
 
     /* A small orange note on the current item: an accent beside the bold label, never the only signal */
     .rail-link[aria-current] svg {
-        @apply text-accent-strong;
+        @apply text-accent;
     }
 
     /* Navigation in the floating tab bar (phones and tablets) */
@@ -634,13 +717,13 @@
 
     .tab-link[aria-current='page'],
     details[open] > .tab-link {
-        @apply bg-white/95 text-heading;
-        box-shadow: 0 1px 2px rgb(6 16 10 / 0.12);
+        @apply bg-white/16 text-heading;
+        box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.2);
     }
 
     .tab-link[aria-current='page'] svg,
     details[open] > .tab-link svg {
-        @apply text-accent-strong;
+        @apply text-accent;
     }
 
     /* Menus and sheets: nearly opaque glass that materialises from the control that opened it */
@@ -883,8 +966,9 @@
         transform: scale(0.97);
     }
 
+    /* The thumb is solid white on clear glass, so its label switches back to dark text */
     .segmented-option:has(input:checked) {
-        @apply bg-white text-heading;
+        @apply bg-white text-[#18311f];
         box-shadow:
             0 1px 2px rgb(6 16 10 / 0.14),
             0 6px 14px -8px rgb(6 16 10 / 0.45);
@@ -1018,6 +1102,13 @@
     }
 }
 
+@keyframes rise-settle {
+    from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.985);
+    }
+}
+
 /* The observation report on paper: white, edge to edge, no photo backdrop, no glass, no photo split across pages */
 @media print {
     @page {
@@ -1045,7 +1136,12 @@
     .glass,
     .glass-thin,
     .glass-thick,
-    .menu-panel {
+    .menu-panel,
+    .rail-glass {
+        --color-ink: #16201a;
+        --color-muted: #4d5b53;
+        --color-heading: #18311f;
+        --color-primary: #276b36;
         -webkit-backdrop-filter: none;
         backdrop-filter: none;
         background: #fff;

@@ -3,6 +3,7 @@
 use App\Models\MonitoringPoint;
 use App\Models\PhotoRecord;
 use App\Models\User;
+use App\Support\HomeAreas;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -180,7 +181,26 @@ test('the overview groups points by area, listed rooms first, with a link to eac
         ->assertSee('href="#area-bedroom"', false)
         ->assertSee(route('points.show', $gate))
         ->assertSee(route('points.create', ['area' => 'Laundry area']))
-        ->assertSeeInOrder(['My home areas', 'id="area-bedroom"', 'Bed wall', 'id="area-exterior"', 'Gate post', 'id="area-laundry-area"', 'Washer wall', 'id="area-no-area-yet"', 'Loose spot'], false);
+        ->assertSeeInOrder(['id="spots-heading"', 'id="area-bedroom"', 'Bed wall', 'id="area-exterior"', 'Gate post', 'id="area-laundry-area"', 'Washer wall', 'id="area-other-spots"', 'Other spots', 'No room chosen', 'Loose spot'], false);
+});
+
+test('rooms keep their usual order, then the resident’s own names, with "Other spots" always last', function () {
+    $points = collect([null, 'Exterior', 'Laundry area', 'Kitchen', 'Living room'])
+        ->map(fn (?string $area) => new MonitoringPoint(['area' => $area]));
+
+    expect(HomeAreas::group($points)->keys()->all())->toBe(['Living room', 'Kitchen', 'Exterior', 'Laundry area', 'Other spots'])
+        ->and(HomeAreas::group($points->reverse())->keys()->all())->toBe(['Living room', 'Kitchen', 'Exterior', 'Laundry area', 'Other spots']);
+});
+
+test('until a room is chosen, the overview lists spots plainly, without an "Other spots" group', function () {
+    $point = MonitoringPoint::factory()->create(['label' => 'Hall corner']);
+
+    $this->actingAs($point->user)->get(route('overview'))
+        ->assertOk()
+        ->assertSee('Hall corner')
+        ->assertSee('Choose a room when you edit a spot')
+        ->assertDontSee('Other spots')
+        ->assertDontSee('No room chosen');
 });
 
 test('a baseline never completes a follow-up, and the message only says what happened', function () {

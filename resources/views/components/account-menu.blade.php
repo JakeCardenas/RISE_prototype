@@ -15,7 +15,7 @@
             <x-icon name="chevron-up" class="size-4" />
         </summary>
     @else
-        <summary class="flex min-h-11 items-center gap-1 rounded-full p-0.5 pr-2 text-heading hover:bg-white/50">
+        <summary class="flex min-h-11 items-center gap-1 rounded-full p-0.5 pr-2 text-heading hover:bg-white/12">
             <span class="flex size-10 items-center justify-center rounded-full bg-brand text-xs font-bold text-white" aria-hidden="true">{{ $initials }}</span>
             <span class="sr-only">Account</span>
             <x-icon name="chevron-down" class="size-4 text-muted" />
