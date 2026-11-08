@@ -4,7 +4,7 @@
 @source '../../storage/framework/views/*.php';
 
 /*
- | RISE: a home observation journal in a Liquid Glass material, set against a dimmed image of Montana Misora Homes.
+ | RISE: a home observation journal in a Liquid Glass material, set against a dimmed photo of Montana Misora Homes.
  | Reading surfaces (sheets, forms, the report) stay opaque white. Light glass is kept for chrome that floats over the
  | backdrop: navigation, menus, toolbars and secondary controls. Resident photos are never blurred, tinted or cropped.
  | The green and orange are sampled from a screenshot of the Montana Homes website and adjusted for contrast; they are
@@ -142,9 +142,9 @@
     --glass-rim: inset 0 0 0 1px rgb(255 255 255 / 0.14), inset 0 1px 0 rgb(255 255 255 / 0.3);
 
     /*
-     | The dimming over the image: dark green-charcoal, lightest through the middle. Together with the softened
-     | highlights on the image itself, its brightest walls and sky stay dark enough for white text at 6.8:1 and
-     | --color-muted at 5.7:1, measured against this image at phone, tablet, desktop and wide crops.
+     | The dimming over the photo: dark green-charcoal, lightest through the middle. Together with the softened
+     | highlights on the photo itself, the brightest cloud stays dark enough for white text at 6.2:1 and
+     | --color-muted at 5.2:1, measured against this photo at phone, tablet, desktop and wide crops.
      */
     --backdrop-veil: linear-gradient(
         180deg,
@@ -282,7 +282,7 @@
 
 @layer components {
     /*
-     | The environment: the Montana Misora Homes image behind every page, dimmed by a green-charcoal veil, with a faint
+     | The environment: the Montana Misora Homes photo behind every page, dimmed by a green-charcoal veil, with a faint
      | warm light above and a green glow below for the glass to pick up. A fixed layer as tall as the largest viewport,
      | rather than background-attachment: fixed, so phones neither repaint nor jump while scrolling. Decoration only:
      | it is never shown as a resident's photo.
@@ -300,22 +300,22 @@
 
     /*
      | Softer highlights, a quieter blue sky and lower contrast, with a slight softness so the houses' window grids
-     | never compete with small text; the silhouettes of the houses stay recognisable. The softness also hides that the
-     | image (848 × 477) is enlarged to fill the screen. Scaled a little so the soft edges stay outside the screen.
+     | never compete with small text; the silhouettes of the houses stay recognisable. Scaled a little so the soft
+     | edges stay outside the screen.
      */
     .backdrop img {
         width: 100%;
         height: 100%;
         object-fit: cover;
-        object-position: 50% 40%;
+        object-position: 62% 40%;
         filter: saturate(0.78) contrast(0.8) brightness(0.8) blur(2px);
         transform: scale(1.04);
     }
 
-    /* Portrait screens keep the brown-and-white facades and their front doors in view */
+    /* Portrait screens keep the nearer, larger houses in view */
     @media (orientation: portrait) {
         .backdrop img {
-            object-position: 38% 50%;
+            object-position: 74% 50%;
         }
     }
 

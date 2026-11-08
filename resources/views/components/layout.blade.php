@@ -32,7 +32,7 @@
     <div class="backdrop" aria-hidden="true">
         <picture>
             <source srcset="{{ asset('images/montana-misora-background.webp') }}" type="image/webp">
-            <img src="{{ asset('images/montana-misora-background.jpg') }}" alt="" width="848" height="477" decoding="async">
+            <img src="{{ asset('images/montana-misora-background.png') }}" alt="" width="1578" height="996" decoding="async">
         </picture>
     </div>
 
