@@ -1,0 +1,227 @@
+@use('App\Models\PhotoAnalysis')
+@use('App\Support\Observations')
+
+@php
+    $position = Observations::position($record);
+    $status = $analysis?->status;
+    $regions = $status === PhotoAnalysis::COMPLETED ? $analysis->regions() : [];
+    $providerName = Str::headline($analysis?->provider ?? $detector->name());
+    $stillWaiting = $analysis?->isWaiting() && $analysis->requested_at->lt(now()->subMinutes(2));
+@endphp
+
+<x-layout title="AI photo analysis">
+    <x-page-header title="AI photo analysis" :back="Observations::entryUrl($point, $record, $position)" :back-label="$point->label">
+        <x-slot:meta>
+            <p class="meta mt-3">
+                <span class="font-semibold text-heading">{{ Observations::label($position) }}</span> of {{ $point->label }} · saved <x-local-time :time="$record->submitted_at" />
+            </p>
+        </x-slot:meta>
+    </x-page-header>
+
+    {{-- Shown in every state --}}
+    <p class="surface -mt-2 mb-8 flex items-start gap-3 rounded-2xl bg-well px-4 py-3 text-sm sm:px-5" role="note">
+        <x-icon name="info" class="mt-0.5 size-4 text-primary" />
+        <span>AI image results can be wrong. They do not identify a crack’s cause or determine whether a building is safe. Contact a qualified professional for an assessment.</span>
+    </p>
+
+    <div class="grid gap-8 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] lg:items-start lg:gap-10">
+        {{-- The photo, with the model's marked regions drawn over it when there are any --}}
+        <section class="analysis-view min-w-0" aria-label="Photo">
+            @if ($regions)
+                <fieldset class="mb-4">
+                    <legend class="sr-only">Show</legend>
+                    <div class="segmented glass">
+                        <label class="segmented-option"><input type="radio" name="view" value="marked" class="sr-only" checked> Marked-up result</label>
+                        <label class="segmented-option"><input type="radio" name="view" value="original" class="sr-only"> Original photo</label>
+                    </div>
+                </fieldset>
+            @endif
+
+            <div class="board flex justify-center p-3 sm:p-5">
+                <div class="relative w-fit max-w-full">
+                    <x-record-photo :record="$record" loading="eager"
+                        :alt="Observations::label($position).' photo of '.$point->label.', saved '.$record->submitted_at->format('j M Y')"
+                        class="print h-auto max-h-[72svh] w-auto max-w-full shadow-print" />
+
+                    @if ($regions)
+                        <svg class="analysis-overlay pointer-events-none absolute inset-0 size-full" viewBox="0 0 1000 1000" preserveAspectRatio="none"
+                            role="img" aria-label="{{ trans_choice('{1} One possible crack-like area|[2,*] :count possible crack-like areas', count($regions)) }} outlined in magenta by the AI model">
+                            @foreach ($regions as $region)
+                                @if ($region['polygon'])
+                                    @php($points = collect($region['polygon'])->map(fn ($point) => round($point[0] * 1000, 1).','.round($point[1] * 1000, 1))->implode(' '))
+                                    <polygon points="{{ $points }}" class="mark-halo" vector-effect="non-scaling-stroke" />
+                                    <polygon points="{{ $points }}" class="mark-line" vector-effect="non-scaling-stroke" />
+                                @else
+                                    @php([$x, $y, $w, $h] = array_map(fn ($value) => round($value * 1000, 1), $region['box']))
+                                    <rect x="{{ $x }}" y="{{ $y }}" width="{{ $w }}" height="{{ $h }}" class="mark-halo" vector-effect="non-scaling-stroke" />
+                                    <rect x="{{ $x }}" y="{{ $y }}" width="{{ $w }}" height="{{ $h }}" class="mark-line" vector-effect="non-scaling-stroke" />
+                                @endif
+                            @endforeach
+                        </svg>
+                    @endif
+                </div>
+            </div>
+
+            @if ($regions)
+                <p class="mt-3 flex items-center gap-2 text-sm font-medium">
+                    <svg viewBox="0 0 20 14" class="h-3.5 w-5 shrink-0" aria-hidden="true" focusable="false">
+                        <rect x="2" y="2" width="16" height="10" rx="2" class="mark-halo" />
+                        <rect x="2" y="2" width="16" height="10" rx="2" class="mark-line" />
+                    </svg>
+                    Possible crack-like area detected by AI
+                </p>
+            @endif
+        </section>
+
+        {{-- One block per state, all with the same order: what is happening, then what you can do --}}
+        <section aria-labelledby="result-heading" class="min-w-0 space-y-6">
+            @if (! $analysis || $status === PhotoAnalysis::NOT_CONFIGURED)
+                <div class="sheet p-5 sm:p-7">
+                    @if ($detector->isConfigured())
+                        <h2 id="result-heading" class="flex items-center gap-2.5 section-title">
+                            <x-icon name="scan" class="text-primary" /> Check this photo with AI
+                        </h2>
+                        <p class="mt-3">An image model can mark areas in this photo that look like cracks, for you to review alongside your own notes.</p>
+
+                        {{-- What leaves RISE, stated before the button that sends it --}}
+                        <h3 class="mt-6 text-sm font-semibold text-ink">If you choose Analyze with AI</h3>
+                        <dl class="title-block mt-2 grid-cols-1">
+                            <div>
+                                <dt>Sent to</dt>
+                                <dd>{{ $providerName }}, the image-analysis service set up for this RISE server</dd>
+                            </div>
+                            <div>
+                                <dt>What is sent</dt>
+                                <dd class="font-medium">A copy of this photo, resized, with location and other embedded details removed</dd>
+                            </div>
+                            <div>
+                                <dt>Training</dt>
+                                <dd class="font-medium">
+                                    RISE turns off {{ $providerName }}’s option to add the photo to a training dataset; how {{ $providerName }}
+                                    handles the copy is covered by its own terms
+                                </dd>
+                            </div>
+                        </dl>
+
+                        <form method="POST" action="{{ route('records.analysis.store', $record) }}" class="mt-6">
+                            @csrf
+                            <button type="submit" class="btn btn-primary w-full sm:w-auto"><x-icon name="scan" /> Analyze with AI</button>
+                        </form>
+                        <p class="mt-3 text-sm text-muted">You can keep this photo without analysing it.</p>
+                    @else
+                        <h2 id="result-heading" class="flex items-center gap-2.5 section-title">
+                            <x-icon name="info" class="text-primary" /> AI analysis isn’t set up
+                        </h2>
+                        <p class="mt-3">This RISE server doesn’t have an image-analysis provider configured, so nothing has been sent anywhere. Your photo is saved and you can keep using it.</p>
+                        <p class="mt-3 text-sm text-muted">The person who runs RISE can add a provider key; see the README.</p>
+                    @endif
+                </div>
+            @elseif ($analysis->isWaiting())
+                <div class="sheet p-5 sm:p-7" data-analysis-waiting data-status-url="{{ route('records.analysis.status', $record) }}">
+                    <h2 id="result-heading" class="flex items-center gap-2.5 section-title" role="status">
+                        <x-icon name="clock" class="text-primary" /> Analyzing photo…
+                    </h2>
+                    <ol class="mt-5 space-y-3 border-l border-line-strong pl-4 text-sm">
+                        <li class="flex flex-wrap items-center gap-x-2.5 gap-y-0.5">
+                            <x-icon name="check-circle" class="size-4 text-success" /> Request received
+                            <x-local-time :time="$analysis->requested_at" class="meta" />
+                        </li>
+                        <li class="flex items-center gap-2.5 font-medium">
+                            <x-icon name="clock" class="size-4 text-primary" />
+                            {{ $status === PhotoAnalysis::PROCESSING ? 'Sent to '.$providerName.', waiting for the result' : 'Waiting for the analysis queue to pick it up' }}
+                        </li>
+                    </ol>
+                    <p class="mt-5 text-sm text-muted">This usually takes under a minute. You can leave this page; the result will be saved here.</p>
+                    <p class="mt-3 text-sm" data-still-waiting @unless ($stillWaiting) hidden @endunless>
+                        Still waiting. The analysis queue may not be running; the person who runs RISE can start it with <code class="rounded bg-well px-1 py-0.5 text-[0.8125rem]">php artisan queue:work</code>.
+                    </p>
+                </div>
+            @elseif ($status === PhotoAnalysis::FAILED)
+                <div class="surface rounded-sheet border border-danger-line bg-danger-tint p-5 sm:p-7">
+                    <h2 id="result-heading" class="flex items-center gap-2.5 text-[1.1875rem] font-semibold tracking-[-0.015em] text-danger">
+                        <x-icon name="alert-circle" /> The analysis didn’t finish
+                    </h2>
+                    <p class="mt-3">{{ $analysis->failureMessage() }} Your photo is still saved.</p>
+                    <form method="POST" action="{{ route('records.analysis.store', $record) }}" class="mt-6">
+                        @csrf
+                        <button type="submit" class="btn btn-primary"><x-icon name="refresh" /> Try again</button>
+                    </form>
+                    <p class="mt-3 text-sm text-muted">Trying again sends a copy of this photo, without location details, to {{ $providerName }} again.</p>
+                </div>
+            @else
+                <div class="sheet p-5 sm:p-7">
+                    <h2 id="result-heading" class="flex items-start gap-3 section-title">
+                        {{-- The same magenta as the outlines, so the heading and the photo read together --}}
+                        <span class="mt-[0.3125rem] size-3.5 shrink-0 rounded-[3px] border-2 border-mark bg-mark/20" aria-hidden="true"></span>
+                        <span>
+                            @if ($regions)
+                                The model marked possible crack-like areas.
+                            @else
+                                The model did not mark an area in this photo. It can still miss cracks.
+                            @endif
+                        </span>
+                    </h2>
+                    @if ($regions)
+                        <p class="mt-3">
+                            {{ trans_choice('{1} One area is|[2,*] :count areas are', count($regions)) }} outlined in magenta. Switch to the original photo
+                            to look at the surface without markings, and compare it with your own observations.
+                        </p>
+                    @else
+                        <p class="mt-3">Keep photographing this spot over time and compare the photos yourself.</p>
+                    @endif
+                </div>
+
+                <div class="sheet p-5 sm:p-7">
+                    <h2 class="section-title">About this result</h2>
+                    <dl class="title-block mt-4">
+                        <div class="col-span-2">
+                            <dt>Model</dt>
+                            <dd>{{ $analysis->model_version ?? $analysis->model_id }}</dd>
+                        </div>
+                        <div>
+                            <dt>Provider</dt>
+                            <dd>{{ $providerName }}</dd>
+                        </div>
+                        <div>
+                            <dt>Analysed</dt>
+                            <dd><x-local-time :time="$analysis->completed_at" /></dd>
+                        </div>
+                        <div>
+                            <dt>Areas marked</dt>
+                            <dd>{{ $analysis->region_count }}</dd>
+                        </div>
+                        <div>
+                            <dt>Score threshold</dt>
+                            <dd>{{ number_format($analysis->confidence_threshold, 2) }}</dd>
+                        </div>
+                    </dl>
+
+                    @if ($regions)
+                        <details class="mt-4">
+                            <summary class="link inline-flex min-h-11 items-center gap-1.5">
+                                <x-icon name="chevron-down" class="size-4" /> Model score for each area
+                            </summary>
+                            <p class="mt-1 text-sm text-muted">
+                                A model score shows how closely an area matched what the model learned to mark. It isn’t the chance that a crack
+                                is real, and it says nothing about size, cause or safety.
+                            </p>
+                            <ol class="mt-3 divide-y divide-line rounded-control border border-line text-sm tabular-nums">
+                                @foreach ($regions as $region)
+                                    <li class="flex flex-wrap justify-between gap-x-4 px-3.5 py-2">
+                                        <span class="font-medium">Area {{ $loop->iteration }}</span>
+                                        <span>model score {{ number_format($region['score'], 2) }}{{ $region['polygon'] ? '' : ' (box only; the model returned no outline)' }}</span>
+                                    </li>
+                                @endforeach
+                            </ol>
+                        </details>
+                    @endif
+
+                    <p class="mt-5 text-sm text-muted">
+                        Benchmark figures published for this model come from its own test images. They aren’t RISE results and don’t show how
+                        it performs on photos of homes like yours.
+                    </p>
+                </div>
+            @endif
+        </section>
+    </div>
+</x-layout>

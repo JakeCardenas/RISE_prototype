@@ -35,4 +35,14 @@ return [
         ],
     ],
 
+    // RISE crack-image analysis (see README.md). The key stays on the server and is never sent to browsers.
+    'roboflow' => [
+        'api_url' => env('ROBOFLOW_API_URL') ?: 'https://serverless.roboflow.com',
+        'api_key' => env('ROBOFLOW_API_KEY'),
+        'model_id' => env('ROBOFLOW_MODEL_ID'),
+        'confidence' => (float) (env('ROBOFLOW_CONFIDENCE') ?: 0.4),
+        'timeout' => (int) (env('ROBOFLOW_TIMEOUT') ?: 20),
+        'max_image_side' => (int) (env('ROBOFLOW_MAX_IMAGE_SIDE') ?: 1280),
+    ],
+
 ];

@@ -1,16 +1,15 @@
-<x-layout title="Add a Note">
-    <h1 class="text-2xl font-bold mb-4">Add a Note</h1>
- 
-    <form action="{{ route('notes.store') }}" method="POST"
-          class="bg-white border border-gray-200 rounded-lg p-6">
+<x-layout title="New note" width="narrow">
+    <x-page-header title="New note" :back="route('notes.index')" back-label="Notes" />
+
+    <form action="{{ route('notes.store') }}" method="POST" class="sheet p-5 sm:p-7">
         @csrf
- 
-        <x-input-field label="Title" name="title" />
-        <x-input-field label="Body" name="body" type="textarea" />
- 
-        <button type="submit"
-                class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Save Note</button>
+
+        <x-input-field label="Title" name="title" maxlength="100" />
+        <x-input-field label="Note" name="body" type="textarea" />
+
+        <div class="mt-2 flex flex-col gap-3 border-t border-line pt-5 sm:flex-row sm:items-center">
+            <button type="submit" class="btn btn-primary">Save note</button>
+            <a href="{{ route('notes.index') }}" class="btn btn-quiet">Cancel</a>
+        </div>
     </form>
 </x-layout>
-
- 

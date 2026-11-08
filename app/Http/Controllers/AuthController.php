@@ -27,7 +27,7 @@ class AuthController extends Controller
             
             $request->session()->regenerate(); // new session id after login
 
-            return redirect()->intended(route('notes.index'));
+            return redirect()->intended(route('overview'));
         }
 
         return back()
@@ -61,7 +61,7 @@ class AuthController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
         
-        return redirect()->route('notes.index')->with('success', 'Welcome, '. $user->name . '!');
+        return redirect()->route('overview')->with('success', 'Welcome, '. $user->name . '!');
     }
  
     //LOGOUT - ends the session

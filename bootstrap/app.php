@@ -12,7 +12,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        // The browser writes only its time zone name here (see resources/js/rise/time-zone.js), so follow-up dates use the resident's own day
+        $middleware->encryptCookies(except: ['rise_tz']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

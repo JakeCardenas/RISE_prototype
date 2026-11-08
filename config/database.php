@@ -39,9 +39,11 @@ return [
             'prefix' => '',
             'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
             'busy_timeout' => null,
-            'journal_mode' => null,
+            // RISE runs a queue worker beside the web server: WAL lets reads continue during writes, and
+            // IMMEDIATE takes the write lock up front so the worker waits instead of failing with "database is locked"
+            'journal_mode' => env('DB_JOURNAL_MODE', 'wal'),
             'synchronous' => null,
-            'transaction_mode' => 'DEFERRED',
+            'transaction_mode' => env('DB_TRANSACTION_MODE', 'IMMEDIATE'),
         ],
 
         'mysql' => [

@@ -3,7 +3,1075 @@
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 
+/*
+ | RISE: a home observation journal in a Liquid Glass material, set against a dimmed photo of Montana Misora Homes.
+ | Reading surfaces (sheets, forms, the report) stay opaque white. Light glass is kept for chrome that floats over the
+ | backdrop: navigation, menus, toolbars and secondary controls. Resident photos are never blurred, tinted or cropped.
+ | The green and orange are sampled from a screenshot of the Montana Homes website and adjusted for contrast; they are
+ | RISE interface choices, not official Montana Homes brand values.
+ */
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+    /* The platform's own interface font: SF on Apple devices, Segoe UI or Roboto elsewhere */
+    --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+        sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
+
+    /* Environment and surfaces */
+    --color-backdrop: #0f1a14; /* the dimmed green-charcoal environment behind everything */
+    --color-canvas: #f2f5f1; /* light neutral fill inside surfaces */
+    --color-surface: #ffffff; /* sheets, fields, menus */
+    --color-well: #e9eee7; /* neutral photo wells, hover and selected rows */
+    --color-well-strong: #d9e3d5;
+    --color-line: #d8e1d4;
+    --color-line-strong: #aebcaa;
+    --color-control: #6a786f; /* form-control borders, 4.6:1 on white */
+
+    /* Text: these four change with the context they sit in (see .on-backdrop, .surface and .glass below) */
+    --color-ink: #16201a; /* 16.7:1 on white */
+    --color-muted: #4d5b53; /* 7.2:1 on white */
+    --color-heading: #18311f; /* titles on white */
+    --color-primary: #276b36; /* links, icons and focus on white, 6.5:1 */
+    --color-focus: #276b36;
+
+    /* Montana-inspired green: the sampled #4b9a44 is 3.5:1 on white, so it stays decorative (icons, large accents);
+       the darker companion carries white text and primary actions */
+    --color-brand: #276b36; /* white text 6.5:1 */
+    --color-brand-strong: #1f5a2c; /* hover and pressed, white text 8.2:1 */
+    --color-brand-bright: #4b9a44;
+
+    /* Montana-inspired orange: a restrained accent, always with dark text on it (7.4:1), never as text on white */
+    --color-accent: #ea9b3e;
+    --color-accent-strong: #c77714; /* the orange as a small icon on white, 3.5:1 */
+
+    /* The deep-green passport card */
+    --color-rail: #173a25;
+    --color-rail-soft: #23502f;
+    --color-rail-text: #f1f6f2;
+    --color-rail-muted: #b7cfbe; /* 7.6:1 on the card */
+    --color-rail-accent: #f3c27f; /* focus and highlights on the card, 7.7:1 */
+
+    /* Semantic states stay apart from the brand: success is teal, not the brand green */
+    --color-success: #0f6e66;
+    --color-success-line: #bfe6df;
+    --color-success-tint: #ebf8f5;
+    --color-danger: #b42318;
+    --color-danger-strong: #912018;
+    --color-danger-line: #f4c7c3;
+    --color-danger-tint: #fef3f2;
+
+    /* AI-marked regions are magenta: not the brand green or orange, and not a red/amber/green safety signal */
+    --color-mark: #db2e91;
+    --color-mark-strong: #a0186b; /* 7.4:1 on white */
+    --color-mark-tint: #fdf0f7;
+
+    /* Depth from one soft light above, tinted with the environment; floating glass sits highest */
+    --shadow-sheet: 0 1px 2px rgb(6 16 10 / 0.12), 0 18px 40px -22px rgb(6 16 10 / 0.55);
+    --shadow-print: 0 2px 6px rgb(6 16 10 / 0.16), 0 24px 44px -24px rgb(6 16 10 / 0.6);
+    --shadow-raised: 0 2px 8px rgb(6 16 10 / 0.16), 0 30px 60px -28px rgb(6 16 10 / 0.65);
+    --shadow-glass: 0 1px 2px rgb(6 16 10 / 0.18), 0 14px 34px -14px rgb(6 16 10 / 0.5), 0 34px 70px -34px rgb(6 16 10 / 0.6);
+
+    /* Continuous, generous corners: photos and fields tighter, sheets and glass softer */
+    --radius-photo: 0.875rem;
+    --radius-control: 0.75rem;
+    --radius-sheet: 1.5rem;
+    --radius-glass: 1.75rem;
+
+    --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+    --ease-glass: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Drafting paper: a fine grid with a stronger line every fifth square, kept for the illustration panels */
+@utility grid-paper {
+    --grid-line: rgb(39 107 54 / 0.07);
+    --grid-major: rgb(39 107 54 / 0.13);
+    background-image:
+        linear-gradient(var(--grid-major) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-major) 1px, transparent 1px),
+        linear-gradient(var(--grid-line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+    background-size:
+        120px 120px,
+        120px 120px,
+        24px 24px,
+        24px 24px;
+    background-position: -1px -1px;
+}
+
+/* Viewfinder corners around a photo: the RISE habit of framing the same view every time */
+@utility viewfinder {
+    position: relative;
+    --vf-color: var(--color-brand);
+    --vf-length: 1.125rem;
+    --vf-weight: 2px;
+    --vf-gap: 0.5rem;
+
+    &::after {
+        content: '';
+        position: absolute;
+        inset: calc(var(--vf-gap) * -1);
+        pointer-events: none;
+        background:
+            linear-gradient(var(--vf-color) 0 0) top left / var(--vf-length) var(--vf-weight),
+            linear-gradient(var(--vf-color) 0 0) top left / var(--vf-weight) var(--vf-length),
+            linear-gradient(var(--vf-color) 0 0) top right / var(--vf-length) var(--vf-weight),
+            linear-gradient(var(--vf-color) 0 0) top right / var(--vf-weight) var(--vf-length),
+            linear-gradient(var(--vf-color) 0 0) bottom left / var(--vf-length) var(--vf-weight),
+            linear-gradient(var(--vf-color) 0 0) bottom left / var(--vf-weight) var(--vf-length),
+            linear-gradient(var(--vf-color) 0 0) bottom right / var(--vf-length) var(--vf-weight),
+            linear-gradient(var(--vf-color) 0 0) bottom right / var(--vf-weight) var(--vf-length);
+        background-repeat: no-repeat;
+    }
+}
+
+/*
+ | Glass material. Three thicknesses: thin for small controls, regular for bars and toolbars, thick for the sidebar.
+ | Each catches light along its top edge. Fills stay at or above 0.66 so text inside keeps 4.5:1 over the darkest part
+ | of the backdrop. Without backdrop-filter, or when the viewer asks for less transparency or more contrast, the same
+ | surfaces become near-solid white.
+ */
+:root {
+    --glass-thin: rgb(255 255 255 / 0.66);
+    --glass-regular: rgb(255 255 255 / 0.7);
+    --glass-thick: rgb(255 255 255 / 0.8);
+    --glass-blur-thin: 16px;
+    --glass-blur-regular: 26px;
+    --glass-blur-thick: 40px;
+    --glass-saturate: 1.8;
+    --glass-edge: linear-gradient(
+        165deg,
+        rgb(255 255 255 / 0.95),
+        rgb(255 255 255 / 0.45) 30%,
+        rgb(255 255 255 / 0.2) 62%,
+        rgb(255 255 255 / 0.75)
+    );
+    --glass-highlight: inset 0 1px 0 rgb(255 255 255 / 0.85), inset 0 -1px 0 rgb(255 255 255 / 0.3),
+        inset 0 0 18px rgb(255 255 255 / 0.12);
+
+    /*
+     | The dimming over the photo: dark green-charcoal, lightest through the middle. Together with the softened
+     | highlights on the photo itself, the brightest cloud stays dark enough for white text at 5.3:1 and
+     | --color-muted at 4.5:1, measured against this photo at phone, tablet and desktop crops.
+     */
+    --backdrop-veil: linear-gradient(
+        180deg,
+        rgb(11 22 16 / 0.6) 0%,
+        rgb(11 22 16 / 0.5) 38%,
+        rgb(11 22 16 / 0.56) 70%,
+        rgb(11 22 16 / 0.72) 100%
+    );
+
+    /* Floating chrome on phones: room kept clear above and below the page content */
+    --top-bar-space: calc(env(safe-area-inset-top) + 5.5rem);
+    --tab-bar-space: calc(env(safe-area-inset-bottom) + 6.75rem);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    :root {
+        --glass-thin: rgb(255 255 255 / 0.95);
+        --glass-regular: rgb(255 255 255 / 0.97);
+        --glass-thick: rgb(255 255 255 / 0.98);
+    }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+    :root {
+        --glass-thin: rgb(255 255 255 / 0.96);
+        --glass-regular: rgb(255 255 255 / 0.98);
+        --glass-thick: #fff;
+    }
+}
+
+@media (prefers-contrast: more) {
+    :root {
+        --glass-thin: #fff;
+        --glass-regular: #fff;
+        --glass-thick: #fff;
+        --glass-edge: linear-gradient(var(--color-control), var(--color-control));
+        --backdrop-veil: linear-gradient(rgb(8 16 11 / 0.92), rgb(8 16 11 / 0.92));
+    }
+}
+
+@layer base {
+    html {
+        -webkit-tap-highlight-color: transparent;
+        -webkit-text-size-adjust: 100%;
+        caret-color: var(--color-primary);
+        accent-color: var(--color-brand);
+        scrollbar-color: rgb(255 255 255 / 0.35) transparent;
+        text-underline-offset: 0.2em;
+        background-color: var(--color-backdrop);
+        /* Anchors and keyboard focus land clear of the floating bars on phones */
+        scroll-padding-top: var(--top-bar-space);
+        scroll-padding-bottom: var(--tab-bar-space);
+    }
+
+    @media (width >= 64rem) {
+        html {
+            scroll-padding-top: 1.5rem;
+            scroll-padding-bottom: 1.5rem;
+        }
+    }
+
+    body {
+        @apply font-sans text-ink antialiased;
+        line-height: 1.5;
+    }
+
+    ::selection {
+        background-color: #cfe3c9;
+        color: #16201a;
+    }
+
+    /* Tracking tightens as type grows; small text gets a touch more room */
+    h1,
+    h2,
+    h3,
+    h4 {
+        line-height: 1.2;
+        text-wrap: balance;
+        letter-spacing: -0.015em;
+    }
+
+    p,
+    li,
+    dd {
+        text-wrap: pretty;
+    }
+
+    small,
+    .text-xs {
+        letter-spacing: 0.01em;
+    }
+
+    /* 16px or larger keeps iOS Safari from zooming into fields */
+    input,
+    textarea,
+    select {
+        font-size: 1rem;
+    }
+
+    a,
+    button,
+    summary,
+    label[for] {
+        touch-action: manipulation;
+    }
+
+    summary {
+        cursor: pointer;
+        list-style: none;
+    }
+
+    summary::-webkit-details-marker {
+        display: none;
+    }
+
+    /* The ring follows its context: green on white and on glass, white on the dark backdrop */
+    :focus-visible {
+        outline: 3px solid var(--color-focus);
+        outline-offset: 2px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        *,
+        ::before,
+        ::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+            scroll-behavior: auto !important;
+        }
+    }
+}
+
+@layer components {
+    /*
+     | The environment: the Montana Misora Homes photo behind every page, dimmed by a green-charcoal veil, with a faint
+     | warm light above and a green glow below for the glass to pick up. A fixed layer as tall as the largest viewport,
+     | rather than background-attachment: fixed, so phones neither repaint nor jump while scrolling. Decoration only:
+     | it is never shown as a resident's photo.
+     */
+    .backdrop {
+        position: fixed;
+        inset: 0 0 auto;
+        height: 100vh;
+        height: 100lvh;
+        z-index: -1;
+        overflow: hidden;
+        pointer-events: none;
+        background-color: var(--color-backdrop);
+    }
+
+    /* Softer highlights and a quieter blue sky, so the photo sits behind the green and orange instead of competing */
+    .backdrop img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: 62% 40%;
+        filter: saturate(0.8) contrast(0.88) brightness(0.82);
+    }
+
+    /* Portrait screens keep the nearer, larger houses in view */
+    @media (orientation: portrait) {
+        .backdrop img {
+            object-position: 74% 50%;
+        }
+    }
+
+    .backdrop::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background:
+            radial-gradient(60rem 36rem at 85% -8%, rgb(234 155 62 / 0.12), transparent 62%),
+            radial-gradient(56rem 40rem at 0% 108%, rgb(75 154 68 / 0.16), transparent 60%),
+            var(--backdrop-veil);
+    }
+
+    /*
+     | Text contexts. Content sitting straight on the dark backdrop uses light text; white surfaces and light glass
+     | switch back to dark text. Utilities such as text-ink, text-muted, text-heading and border-line follow along.
+     */
+    .on-backdrop {
+        --color-ink: #ffffff;
+        --color-muted: rgb(255 255 255 / 0.88);
+        --color-heading: #ffffff;
+        --color-primary: #dcf2d6; /* a pale green for links and icons on the backdrop, 4.5:1 at the brightest cloud */
+        --color-focus: #ffffff;
+        --color-line: rgb(255 255 255 / 0.18);
+        --color-line-strong: rgb(255 255 255 / 0.32);
+        color: var(--color-ink);
+        /* A faint shadow keeps light text crisp where it passes over a bright patch of the photo */
+        text-shadow: 0 1px 2px rgb(6 14 9 / 0.35);
+    }
+
+    .surface,
+    .sheet,
+    .board,
+    .menu-panel,
+    .confirm-panel,
+    .title-block,
+    .drop-card,
+    .btn-secondary,
+    .btn-on-rail {
+        --color-ink: #16201a;
+        --color-muted: #4d5b53;
+        --color-heading: #18311f;
+        --color-primary: #276b36;
+        --color-focus: #276b36;
+        --color-line: #d8e1d4;
+        --color-line-strong: #aebcaa;
+        color: var(--color-ink);
+        text-shadow: none;
+        scrollbar-color: #aebcaa transparent;
+    }
+
+    /* Glass surfaces: a light fill, a light-catching edge and a soft floating shadow */
+    .glass,
+    .glass-thin,
+    .glass-thick,
+    .menu-panel {
+        --glass-fill: var(--glass-regular);
+        border: 1px solid transparent;
+        background:
+            linear-gradient(var(--glass-fill), var(--glass-fill)) padding-box,
+            var(--glass-edge) border-box;
+        box-shadow: var(--glass-highlight), var(--shadow-glass);
+    }
+
+    .glass,
+    .glass-thin,
+    .glass-thick {
+        --color-ink: #16201a;
+        --color-muted: #33423a; /* 5.1:1 on glass over the darkest backdrop */
+        --color-heading: #16201a;
+        --color-primary: #1b4426; /* deep green, readable on glass */
+        --color-focus: #1b4426;
+        --color-line: rgb(22 32 26 / 0.12);
+        --color-line-strong: rgb(22 32 26 / 0.24);
+        color: var(--color-ink);
+        text-shadow: none;
+    }
+
+    .glass-thin {
+        --glass-fill: var(--glass-thin);
+        box-shadow: var(--glass-highlight), 0 1px 2px rgb(6 16 10 / 0.2), 0 8px 20px -10px rgb(6 16 10 / 0.55);
+    }
+
+    .glass-thick {
+        --glass-fill: var(--glass-thick);
+    }
+
+    /*
+     | Menus open from inside glass bars, where a browser can't blur the page behind a second glass layer, and light
+     | glass on light glass stops being legible; so menus are nearly opaque.
+     */
+    .menu-panel {
+        --glass-fill: rgb(255 255 255 / 0.97);
+    }
+
+    @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+        .glass {
+            -webkit-backdrop-filter: blur(var(--glass-blur-regular)) saturate(var(--glass-saturate));
+            backdrop-filter: blur(var(--glass-blur-regular)) saturate(var(--glass-saturate));
+        }
+
+        .glass-thin {
+            -webkit-backdrop-filter: blur(var(--glass-blur-thin)) saturate(var(--glass-saturate));
+            backdrop-filter: blur(var(--glass-blur-thin)) saturate(var(--glass-saturate));
+        }
+
+        .glass-thick,
+        .menu-panel {
+            -webkit-backdrop-filter: blur(var(--glass-blur-thick)) saturate(var(--glass-saturate));
+            backdrop-filter: blur(var(--glass-blur-thick)) saturate(var(--glass-saturate));
+        }
+    }
+
+    @media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+        .glass,
+        .glass-thin,
+        .glass-thick,
+        .menu-panel {
+            -webkit-backdrop-filter: none;
+            backdrop-filter: none;
+        }
+    }
+
+    /* Where page content passes under floating bars on phones, it fades into the backdrop instead of a hard line */
+    .edge-fade-top,
+    .edge-fade-bottom {
+        @apply pointer-events-none fixed inset-x-0 z-20 lg:hidden;
+    }
+
+    .edge-fade-top {
+        top: 0;
+        height: calc(env(safe-area-inset-top) + 3.5rem);
+        background: linear-gradient(to bottom, rgb(15 26 20 / 0.85), rgb(15 26 20 / 0));
+    }
+
+    .edge-fade-bottom {
+        bottom: 0;
+        height: calc(env(safe-area-inset-bottom) + 4.5rem);
+        background: linear-gradient(to top, rgb(15 26 20 / 0.9), rgb(15 26 20 / 0));
+    }
+
+    /* Type: a large, tight title; everything else at reading sizes */
+    .page-title {
+        @apply text-[2.125rem] leading-[1.08] font-bold tracking-[-0.03em] break-words text-heading sm:text-[2.5rem] lg:text-[2.75rem];
+    }
+
+    .section-title {
+        @apply text-[1.25rem] leading-snug font-semibold tracking-[-0.02em] text-heading;
+    }
+
+    .section-head {
+        @apply flex flex-wrap items-end justify-between gap-x-6 gap-y-1 pb-1;
+    }
+
+    .meta {
+        @apply text-sm text-muted tabular-nums;
+    }
+
+    /* Date stamp: kept for quiet dates */
+    .stamp {
+        @apply inline-flex items-center gap-3 text-heading tabular-nums;
+    }
+
+    .stamp-day {
+        @apply text-[2.5rem] leading-none font-bold tracking-[-0.04em];
+    }
+
+    .stamp-side {
+        @apply flex flex-col leading-tight;
+    }
+
+    .stamp-month {
+        @apply text-[1.0625rem] font-semibold tracking-[-0.01em];
+    }
+
+    .stamp-time {
+        @apply text-sm font-medium text-muted;
+    }
+
+    .stamp-sm {
+        @apply gap-2.5;
+    }
+
+    .stamp-sm .stamp-day {
+        @apply text-[1.75rem];
+    }
+
+    .stamp-sm .stamp-month {
+        @apply text-[0.9375rem];
+    }
+
+    /* Buttons: capsules that respond the instant they are pressed */
+    .btn {
+        @apply inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-full px-5 py-2 text-center text-[0.9375rem]/snug font-semibold tracking-[-0.01em] select-none;
+        -webkit-touch-callout: none;
+        transition:
+            background-color 160ms ease-out,
+            box-shadow 160ms ease-out,
+            color 160ms ease-out,
+            transform 100ms ease-out;
+    }
+
+    .btn:active:not(:disabled) {
+        transform: scale(0.97);
+    }
+
+    .btn:disabled {
+        @apply cursor-not-allowed opacity-50;
+    }
+
+    .btn-primary {
+        @apply bg-brand text-white hover:bg-brand-strong active:bg-brand-strong;
+        box-shadow:
+            inset 0 1px 0 rgb(255 255 255 / 0.18),
+            0 1px 1px rgb(10 30 16 / 0.35),
+            0 10px 20px -10px rgb(10 30 16 / 0.7);
+    }
+
+    .btn-secondary {
+        @apply bg-white/90 text-heading hover:bg-white active:bg-well;
+        box-shadow:
+            inset 0 0 0 1px rgb(22 32 26 / 0.12),
+            0 1px 2px rgb(6 16 10 / 0.12);
+    }
+
+    .btn-quiet {
+        @apply text-primary hover:bg-ink/8 active:bg-ink/12;
+    }
+
+    .btn-danger {
+        @apply bg-danger text-white hover:bg-danger-strong active:bg-danger-strong;
+    }
+
+    .btn-danger-quiet {
+        @apply text-danger hover:bg-danger-tint active:bg-danger-tint;
+    }
+
+    /* The white action on the deep-green passport card */
+    .btn-on-rail {
+        @apply bg-surface text-heading hover:bg-well active:bg-well-strong;
+        box-shadow: 0 1px 2px rgb(0 0 0 / 0.25);
+    }
+
+    /* A back link that floats as a small glass capsule */
+    .btn-back {
+        @apply inline-flex min-h-11 max-w-full items-center gap-1 rounded-full py-2 pr-4 pl-2.5 text-sm font-semibold text-primary;
+        transition: transform 100ms ease-out;
+    }
+
+    .btn-back:active {
+        transform: scale(0.97);
+    }
+
+    .link {
+        @apply font-semibold text-primary underline decoration-primary/45 underline-offset-2 hover:decoration-primary;
+    }
+
+    .skip-link {
+        @apply sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-full focus:bg-surface focus:px-5 focus:py-3 focus:font-semibold focus:text-[#18311f] focus:shadow-raised;
+    }
+
+    /* The deep-green passport card is its own text context; focus rings on it switch to light orange */
+    .rail {
+        --color-ink: var(--color-rail-text);
+        --color-muted: var(--color-rail-muted);
+        --color-heading: var(--color-rail-text);
+        --color-primary: var(--color-rail-accent);
+        --color-focus: var(--color-rail-accent);
+        --color-line: rgb(255 255 255 / 0.12);
+        text-shadow: none;
+    }
+
+    .rail :focus-visible {
+        outline-color: var(--color-rail-accent);
+    }
+
+    /* Navigation in the floating sidebar (desktop): a raised white capsule marks where you are */
+    .rail-link {
+        @apply flex min-h-11 items-center gap-3 rounded-[0.875rem] px-3 text-[0.9375rem] font-medium text-ink select-none hover:bg-white/45;
+        transition:
+            background-color 160ms ease-out,
+            box-shadow 160ms ease-out,
+            transform 100ms ease-out;
+    }
+
+    .rail-link:active {
+        transform: scale(0.98);
+    }
+
+    .rail-link svg {
+        @apply text-muted;
+    }
+
+    .rail-link[aria-current] {
+        @apply bg-white/95 font-semibold text-heading;
+        box-shadow:
+            0 1px 2px rgb(6 16 10 / 0.12),
+            0 6px 14px -8px rgb(6 16 10 / 0.4);
+    }
+
+    /* A small orange note on the current item: an accent beside the bold label, never the only signal */
+    .rail-link[aria-current] svg {
+        @apply text-accent-strong;
+    }
+
+    /* Navigation in the floating tab bar (phones and tablets) */
+    .tab-link {
+        @apply flex min-h-12 min-w-16 flex-col items-center justify-center gap-0.5 rounded-full px-3 text-[0.6875rem] font-semibold tracking-[0.01em] text-muted select-none;
+        transition:
+            background-color 160ms ease-out,
+            color 160ms ease-out,
+            transform 100ms ease-out;
+    }
+
+    .tab-link:active {
+        transform: scale(0.95);
+    }
+
+    .tab-link[aria-current='page'],
+    details[open] > .tab-link {
+        @apply bg-white/95 text-heading;
+        box-shadow: 0 1px 2px rgb(6 16 10 / 0.12);
+    }
+
+    .tab-link[aria-current='page'] svg,
+    details[open] > .tab-link svg {
+        @apply text-accent-strong;
+    }
+
+    /* Menus and sheets: nearly opaque glass that materialises from the control that opened it */
+    .menu-panel {
+        @apply z-40 rounded-[1.375rem] p-1.5;
+    }
+
+    details[open] > .menu-panel {
+        animation: rise-materialize 220ms var(--ease-glass);
+    }
+
+    details[open] > .confirm-panel {
+        animation: rise-pop 180ms var(--ease-out-quint);
+    }
+
+    .menu-item {
+        @apply flex min-h-11 w-full cursor-pointer items-center gap-2.5 rounded-[0.875rem] px-3 text-left text-[0.9375rem] font-medium text-ink select-none hover:bg-ink/6 active:bg-ink/10;
+    }
+
+    .menu-item[aria-current] {
+        @apply bg-well font-semibold text-heading;
+    }
+
+    /* Inline confirmation for permanent deletions: solid, never glass */
+    .confirm-panel {
+        @apply mt-2 rounded-[1.125rem] border border-danger-line bg-danger-tint p-4;
+    }
+
+    /* Form fields: solid white, so typing and errors are always legible */
+    .field-label {
+        @apply mb-1.5 block font-semibold text-ink;
+    }
+
+    .field-hint {
+        @apply mb-2 text-sm text-muted;
+    }
+
+    .field-error {
+        @apply mt-1.5 flex items-start gap-1.5 text-sm font-medium text-danger;
+    }
+
+    .field-control {
+        @apply block min-h-11 w-full rounded-control border border-control bg-surface px-3.5 py-2.5 text-[#16201a] placeholder:text-[#4d5b53];
+        box-shadow: inset 0 1px 2px rgb(6 16 10 / 0.06);
+        transition:
+            border-color 160ms ease-out,
+            box-shadow 160ms ease-out;
+    }
+
+    .field-control:hover {
+        @apply border-brand;
+    }
+
+    .field-control:focus-visible {
+        outline: none;
+        border-color: var(--color-brand);
+        box-shadow:
+            inset 0 1px 2px rgb(6 16 10 / 0.06),
+            0 0 0 4px rgb(39 107 54 / 0.3);
+    }
+
+    .field-control:disabled {
+        @apply cursor-not-allowed bg-canvas opacity-70;
+    }
+
+    .field-control[aria-invalid='true'] {
+        @apply border-danger;
+        box-shadow: inset 0 0 0 1px var(--color-danger);
+    }
+
+    select.field-control {
+        appearance: none;
+        padding-right: 2.75rem;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23276b36' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3C/svg%3E");
+        background-position: right 0.875rem center;
+        background-repeat: no-repeat;
+        background-size: 1.125rem;
+    }
+
+    /* Reading surfaces: opaque white sheets on the backdrop, and a neutral photo well */
+    .sheet {
+        @apply rounded-sheet bg-surface;
+        box-shadow:
+            inset 0 0 0 1px rgb(22 32 26 / 0.05),
+            var(--shadow-sheet);
+    }
+
+    .board {
+        @apply rounded-sheet bg-well;
+    }
+
+    /* Photos: crisp prints with rounded corners and a quiet edge; never blurred, tinted or cropped */
+    .print {
+        @apply overflow-hidden rounded-photo bg-well-strong ring-1 ring-black/8;
+    }
+
+    .frame-link {
+        @apply block rounded-photo;
+        transition: transform 220ms var(--ease-out-quint);
+    }
+
+    .frame-link > img,
+    .frame-link > .print {
+        transition: box-shadow 220ms ease-out;
+    }
+
+    @media (hover: hover) {
+        .frame-link:hover {
+            transform: translateY(-2px);
+        }
+
+        .frame-link:hover > img,
+        .frame-link:hover > .print {
+            box-shadow: var(--shadow-print);
+        }
+    }
+
+    .frame-link:active {
+        transform: scale(0.985);
+    }
+
+    .step-number {
+        @apply flex size-7 shrink-0 items-center justify-center rounded-full bg-brand text-[0.8125rem] font-bold text-white tabular-nums;
+    }
+
+    /* Small labels: "Unverified" is neutral; "Latest" carries the orange accent with dark text */
+    .tag {
+        @apply inline-flex items-center rounded-full bg-ink/8 px-2 py-0.5 text-xs font-semibold text-muted;
+    }
+
+    .tag-accent {
+        @apply bg-accent text-[#16201a];
+    }
+
+    /* A follow-up date the resident set has passed: dark rather than red, because it is about their plan, not the crack */
+    .tag-past {
+        @apply bg-[#22302a] text-white;
+    }
+
+    /* Choice chips: radio buttons that read as tappable pills; the chosen one fills with the brand green */
+    .choice-chip {
+        @apply relative inline-flex min-h-11 cursor-pointer items-center rounded-full border border-control/50 bg-surface px-4 text-[0.9375rem] font-medium text-ink select-none hover:border-brand;
+        transition:
+            background-color 160ms ease-out,
+            border-color 160ms ease-out,
+            color 160ms ease-out,
+            transform 100ms ease-out;
+    }
+
+    .choice-chip:active {
+        transform: scale(0.97);
+    }
+
+    .choice-chip:has(input:checked) {
+        @apply border-brand bg-brand text-white;
+    }
+
+    .choice-chip:has(input:focus-visible) {
+        outline: 3px solid var(--color-focus);
+        outline-offset: 2px;
+    }
+
+    /* "Name this area" appears once Other is chosen; browsers without :has() always show it */
+    @supports selector(:has(*)) {
+        .area-other:not([data-show]) {
+            display: none;
+        }
+
+        .area-picker:has(input[value='other']:checked) .area-other {
+            display: block;
+        }
+    }
+
+    /* Upload progress */
+    .upload-progress {
+        @apply block h-1.5 w-full overflow-hidden rounded-full border-0 bg-well-strong;
+        appearance: none;
+    }
+
+    .upload-progress::-webkit-progress-bar {
+        @apply rounded-full bg-well-strong;
+    }
+
+    .upload-progress::-webkit-progress-value {
+        @apply rounded-full bg-brand;
+    }
+
+    .upload-progress::-moz-progress-bar {
+        @apply rounded-full bg-brand;
+    }
+
+    /* Drop zone: a soft inset well with a photo card that lifts when a file is held over it */
+    .dropzone {
+        @apply relative flex flex-col items-center justify-center gap-4 overflow-hidden rounded-[1.25rem] border-[1.5px] border-dashed border-brand/35 bg-well/60 px-5 py-9 text-center sm:py-11;
+        transition:
+            background-color 180ms ease-out,
+            border-color 180ms ease-out;
+    }
+
+    .drop-card {
+        @apply flex size-20 items-center justify-center rounded-[1.25rem] bg-surface text-brand;
+        box-shadow:
+            inset 0 0 0 1px rgb(22 32 26 / 0.06),
+            var(--shadow-sheet);
+        transition:
+            transform 260ms var(--ease-out-quint),
+            box-shadow 260ms ease-out;
+    }
+
+    .dropzone[data-dragging] {
+        @apply border-solid border-brand bg-well;
+    }
+
+    .dropzone[data-dragging] .drop-card {
+        transform: translateY(-6px) rotate(-4deg);
+        box-shadow: var(--shadow-raised);
+    }
+
+    @media (hover: hover) {
+        .dropzone:hover .drop-card {
+            transform: translateY(-3px) rotate(-2deg);
+        }
+    }
+
+    /* Segmented control: a glass track with a raised white thumb on the chosen option */
+    .segmented {
+        @apply inline-flex gap-1 rounded-full p-1;
+    }
+
+    .segmented-option {
+        @apply relative inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full px-4 text-sm font-semibold text-ink select-none;
+        transition:
+            background-color 180ms ease-out,
+            box-shadow 180ms ease-out,
+            color 180ms ease-out,
+            transform 100ms ease-out;
+    }
+
+    .segmented-option:active {
+        transform: scale(0.97);
+    }
+
+    .segmented-option:has(input:checked) {
+        @apply bg-white text-heading;
+        box-shadow:
+            0 1px 2px rgb(6 16 10 / 0.14),
+            0 6px 14px -8px rgb(6 16 10 / 0.45);
+    }
+
+    .segmented-option:has(input:focus-visible) {
+        outline: 3px solid var(--color-focus);
+        outline-offset: 2px;
+    }
+
+    /* Before/after slider: the later photo sits over the earlier one and is revealed from the divider rightwards */
+    .wipe {
+        @apply relative overflow-hidden rounded-photo bg-well-strong select-none;
+        --wipe: 50%;
+        cursor: ew-resize;
+        touch-action: pan-y;
+    }
+
+    .wipe img {
+        @apply absolute inset-0 size-full object-contain;
+        pointer-events: none;
+    }
+
+    .wipe-later {
+        @apply absolute inset-0;
+        clip-path: inset(0 0 0 var(--wipe));
+    }
+
+    .wipe-divider {
+        @apply pointer-events-none absolute inset-y-0 w-0.5 -translate-x-1/2 bg-white;
+        left: var(--wipe);
+        box-shadow: 0 0 0 1px rgb(10 30 16 / 0.35);
+    }
+
+    /* The handle is solid, not glass, so nothing blurs the photo under it */
+    .wipe-handle {
+        @apply pointer-events-none absolute top-1/2 flex size-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white text-[#18311f];
+        left: var(--wipe);
+        box-shadow:
+            0 0 0 1px rgb(10 30 16 / 0.14),
+            var(--shadow-raised);
+    }
+
+    .wipe:has(input:focus-visible) .wipe-handle {
+        outline: 3px solid var(--color-focus);
+        outline-offset: 2px;
+    }
+
+    .wipe-label {
+        @apply pointer-events-none absolute top-3 rounded-full bg-rail/85 px-3 py-1 text-xs font-semibold text-white tabular-nums;
+    }
+
+    /* Provenance laid out like the title block of a drawing sheet */
+    .title-block {
+        @apply grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-line bg-line;
+    }
+
+    .title-block > div {
+        @apply min-w-0 bg-surface px-3.5 py-2.5;
+    }
+
+    .title-block dt {
+        @apply text-xs font-semibold text-muted;
+    }
+
+    .title-block dd {
+        @apply mt-0.5 text-[0.9375rem] font-semibold break-words text-ink tabular-nums;
+    }
+
+    /* Outlines drawn from the model's own regions: a dark halo keeps the magenta visible on light walls */
+    .mark-halo {
+        fill: none;
+        stroke: rgb(0 0 0 / 0.5);
+        stroke-width: 5px;
+        stroke-linejoin: round;
+    }
+
+    .mark-line {
+        fill: color-mix(in srgb, var(--color-mark) 18%, transparent);
+        stroke: var(--color-mark);
+        stroke-width: 2.5px;
+        stroke-linejoin: round;
+    }
+
+    /* Horizontal strips of photos scroll on their own, with a thin themed scrollbar */
+    .strip {
+        @apply flex gap-3 overflow-x-auto overscroll-x-contain pb-2;
+        scroll-snap-type: x proximity;
+        scrollbar-width: thin;
+    }
+
+    .strip > * {
+        scroll-snap-align: start;
+    }
+
+    /* The compact page title that appears in the phone's top bar once the large title scrolls away */
+    .compact-title {
+        @apply pointer-events-none absolute inset-x-[5.5rem] truncate text-center text-[0.9375rem] font-semibold text-ink opacity-0;
+        transform: translateY(4px);
+        transition:
+            opacity 200ms ease-out,
+            transform 200ms var(--ease-glass);
+    }
+
+    .brand-word {
+        transition: opacity 200ms ease-out;
+    }
+
+    [data-title-collapsed] .compact-title {
+        @apply opacity-100;
+        transform: none;
+    }
+
+    [data-title-collapsed] .brand-word {
+        @apply opacity-0;
+    }
+}
+
+@keyframes rise-pop {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+}
+
+/* A glass surface arrives as a material: it grows from its trigger while it fades in */
+@keyframes rise-materialize {
+    from {
+        opacity: 0;
+        transform: scale(0.94);
+    }
+}
+
+/* The observation report on paper: white, edge to edge, no photo backdrop, no glass, no photo split across pages */
+@media print {
+    @page {
+        margin: 14mm 12mm;
+    }
+
+    html,
+    body {
+        background: #fff;
+    }
+
+    .backdrop {
+        display: none;
+    }
+
+    .on-backdrop {
+        --color-ink: #16201a;
+        --color-muted: #4d5b53;
+        --color-heading: #18311f;
+        --color-primary: #276b36;
+        --color-line: #d8e1d4;
+        --color-line-strong: #aebcaa;
+    }
+
+    .glass,
+    .glass-thin,
+    .glass-thick,
+    .menu-panel {
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+        background: #fff;
+        box-shadow: none;
+    }
+
+    .report-sheet {
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+    }
+
+    .report-entry {
+        break-inside: avoid;
+    }
+}
+
+/*
+ | View switches built from radio buttons. They show and hide whole blocks, so they sit outside the cascade layers
+ | and win over display utilities such as `grid` on the blocks they control.
+ */
+.analysis-view:has(input[value='original']:checked) .analysis-overlay {
+    visibility: hidden;
+}
+
+/* Compare: side by side by default; the slider view only exists once its script has run */
+.compare-views:has(input[value='wipe']:checked) [data-compare-side],
+.compare-views:not(:has(input[value='wipe']:checked)) [data-compare-wipe] {
+    display: none;
 }

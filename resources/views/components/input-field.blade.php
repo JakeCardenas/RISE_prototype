@@ -1,19 +1,35 @@
-@props(['label', 'name', 'value' => '', 'type' => 'text'])
+@props(['label', 'name', 'value' => '', 'type' => 'text', 'hint' => null])
 
-<div class="mb-4">
-    <label for="{{ $name }}" class="block text-sm font-medium mb-1">{{ $label }}</label>
+@php
+    // Hints and errors are announced with the field they belong to
+    $describedBy = trim(($hint ? "$name-hint " : '').($errors->has($name) ? "$name-error" : ''));
+@endphp
+
+<div class="mb-5">
+    <label for="{{ $name }}" class="field-label">{{ $label }}</label>
+
+    @if ($hint)
+        <p id="{{ $name }}-hint" class="field-hint">{{ $hint }}</p>
+    @endif
 
     @if ($type === 'textarea')
         <textarea id="{{ $name }}" name="{{ $name }}" rows="5"
-            {{ $attributes->merge(['class' => 'w-full border border-gray-300 rounded-lg p-2']) }}>{{ old($name, $value) }}</textarea>
+            @if ($describedBy) aria-describedby="{{ $describedBy }}" @endif
+            @error($name) aria-invalid="true" @enderror
+            {{ $attributes->merge(['class' => 'field-control']) }}>{{ old($name, $value) }}</textarea>
     @else
         {{-- Password fields are never re-filled after a failed submit --}}
         <input type="{{ $type }}" id="{{ $name }}" name="{{ $name }}"
             @if ($type !== 'password') value="{{ old($name, $value) }}" @endif
-            {{ $attributes->merge(['class' => 'w-full border border-gray-300 rounded-lg p-2']) }}>
+            @if ($describedBy) aria-describedby="{{ $describedBy }}" @endif
+            @error($name) aria-invalid="true" @enderror
+            {{ $attributes->merge(['class' => 'field-control']) }}>
     @endif
 
     @error($name)
-        <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+        <p id="{{ $name }}-error" class="field-error">
+            <x-icon name="alert-circle" class="mt-0.5 size-4" />
+            <span>{{ $message }}</span>
+        </p>
     @enderror
 </div>
