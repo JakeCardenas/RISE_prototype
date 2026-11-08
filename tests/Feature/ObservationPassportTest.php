@@ -90,7 +90,7 @@ test('the report shows the owner all photos in date order with notes and the doc
         ->assertOk()
         ->assertSee('Stair wall by the landing')
         ->assertSee('Painted concrete')
-        ->assertSee('All 2 photos of this point')
+        ->assertSee('All 2 photos of this spot')
         ->assertSeeInOrder([route('records.photo', $earlier), route('records.photo', $later)])
         ->assertSeeTextInOrder(['Baseline', 'Photo taken', 'Unverified', 'Hairline near the step', 'Follow-up 1', 'Not provided', 'Looks the same'])
         ->assertSee('not a structural diagnosis or a safety certification')

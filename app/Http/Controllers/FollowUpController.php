@@ -8,6 +8,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 // A point's next follow-up date, set by the resident from the point's passport. RISE shows it on the Overview
 // as the day gets close; it never sends notifications and never sets a date by itself.
@@ -18,11 +19,16 @@ class FollowUpController extends Controller
     {
         Gate::authorize('update', $point);
 
+        if (! $point->photoRecords()->exists()) {
+            throw ValidationException::withMessages(['follow_up_on' => 'Add the first photo of this spot before planning a follow-up.']);
+        }
+
         $data = $request->validate([
             'in_days' => ['nullable', 'integer', Rule::in(array_keys(FollowUps::QUICK_PICKS))],
-            'follow_up_on' => ['required_without:in_days', 'nullable', 'date_format:Y-m-d', 'after_or_equal:2000-01-01', 'before_or_equal:2099-12-31'],
+            'follow_up_on' => ['required_without:in_days', ...FollowUps::dateRules($point, FollowUps::today($request))],
         ], [
-            'follow_up_on.*' => 'Choose a follow-up date from the calendar.',
+            'follow_up_on.required_without' => 'Choose a day for the follow-up.',
+            'follow_up_on.date_format' => 'Choose a follow-up date from the calendar.',
         ]);
 
         $date = isset($data['in_days'])
@@ -32,7 +38,7 @@ class FollowUpController extends Controller
         $point->update(['follow_up_on' => $date->toDateString()]);
 
         return redirect(route('points.show', $point).'#follow-up')
-            ->with('success', 'Next follow-up set for '.$date->format('l j F Y').'. It will appear on your Overview as the day gets close.');
+            ->with('success', 'Follow-up planned for '.$date->format('l j F Y').'. It will show on your Overview as the day gets close.');
     }
 
     // DELETE — clear the date; the point and its photos are unchanged

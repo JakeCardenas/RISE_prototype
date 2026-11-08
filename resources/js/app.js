@@ -7,5 +7,6 @@ import './rise/report-print';
 import './rise/scroll-title';
 import './rise/time-zone';
 import './rise/follow-up';
+import './rise/copy-text';
 
 localizeTimes(document);

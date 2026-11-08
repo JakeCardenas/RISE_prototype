@@ -19,7 +19,7 @@ test('the owner can compare two photos of a point, earlier one first', function 
         ->get(route('points.compare', [$point, 'first' => $newer->id, 'second' => $older->id]))
         ->assertOk()
         ->assertSeeInOrder([route('records.photo', $older), route('records.photo', $newer)])
-        ->assertSee('visual, side-by-side view only')
+        ->assertSee('This view only shows your photos.')
         ->assertDontSee('severity');
 });
 

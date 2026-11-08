@@ -1,5 +1,5 @@
-<x-layout title="Log in" bare>
-    <x-auth-card heading="Log in to RISE" intro="Your private, dated photo record of cracks and surfaces at home.">
+<x-layout title="Sign in" bare>
+    <x-auth-card heading="Welcome back" intro="Sign in to see your photos and follow-ups.">
         <form action="{{ route('login') }}" method="POST">
             @csrf
 
@@ -8,10 +8,10 @@
 
             <label class="mb-6 flex min-h-11 w-fit cursor-pointer items-center gap-3">
                 <input type="checkbox" name="remember" value="1" @checked(old('remember')) class="size-5 accent-brand">
-                Remember me on this device
+                Keep me signed in on this device
             </label>
 
-            <button type="submit" class="btn btn-primary w-full">Log in</button>
+            <button type="submit" class="btn btn-primary w-full">Sign in</button>
         </form>
 
         @if (Route::has('register'))

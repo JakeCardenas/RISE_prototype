@@ -1,3 +1,8 @@
+# Repository rules
+
+- Commit only with the repository owner's configured Git identity, and only when the owner asks.
+- Never add agent, bot or AI-tool attribution: no authors, co-authors, commit trailers, contributor entries or README credits.
+
 <laravel-boost-guidelines>
 # Laravel Application
 

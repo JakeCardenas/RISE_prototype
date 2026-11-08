@@ -21,7 +21,7 @@ class MonitoringPointController extends Controller
         $point = $request->user()->monitoringPoints()->create($request->pointData());
 
         return redirect()->route('records.create', ['point' => $point])
-            ->with('success', 'Monitoring point created. Now add its first photo.');
+            ->with('success', 'Spot created. Now add its first photo.');
     }
 
     // READ — the point's observation passport: baseline and latest photo, then the whole history in date order
@@ -56,7 +56,7 @@ class MonitoringPointController extends Controller
     {
         $point->update($request->pointData());
 
-        return redirect()->route('points.show', $point)->with('success', 'Monitoring point updated.');
+        return redirect()->route('points.show', $point)->with('success', 'Spot updated.');
     }
 
     // DELETE — remove the point, its records and their photo files
@@ -66,6 +66,6 @@ class MonitoringPointController extends Controller
 
         $point->delete();
 
-        return redirect()->route('overview')->with('success', 'Monitoring point and its photos deleted.');
+        return redirect()->route('overview')->with('success', 'Spot and its photos deleted.');
     }
 }

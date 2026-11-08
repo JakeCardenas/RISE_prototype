@@ -39,8 +39,8 @@ class StorePhotoRecordRequest extends FormRequest
         $limit = PhotoUploads::maxLabel();
 
         return [
-            'monitoring_point_id.required' => 'Choose the monitoring point this photo belongs to.',
-            'monitoring_point_id.exists' => 'Choose one of your monitoring points.',
+            'monitoring_point_id.required' => 'Choose a spot for this photo.',
+            'monitoring_point_id.exists' => 'Choose one of your spots.',
             'photo.required' => 'Take or choose a photo to save.',
             'photo.file' => 'Take or choose a photo to save.',
             'photo.uploaded' => "The photo didn’t finish uploading. It may be larger than the {$limit} limit, or the connection dropped. Please try again.",

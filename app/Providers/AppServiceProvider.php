@@ -6,6 +6,9 @@ use App\Models\MonitoringPoint;
 use App\Models\PhotoRecord;
 use App\Services\Analysis\CrackDetector;
 use App\Services\Analysis\RoboflowCrackDetector;
+use App\Services\Comparison\OpenAiCompatiblePhotoComparer;
+use App\Services\Comparison\PhotoComparer;
+use App\Services\Comparison\UnconfiguredPhotoComparer;
 use App\Support\HomeAreas;
 use Closure;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -25,6 +28,12 @@ class AppServiceProvider extends ServiceProvider
         // The crack-image detector is replaceable; add providers here and choose one with RISE_ANALYSIS_PROVIDER
         $this->app->bind(CrackDetector::class, fn () => match (config('rise.analysis_provider')) {
             default => new RoboflowCrackDetector(config('services.roboflow')),
+        });
+
+        // The optional two-photo comparison stays unavailable until a provider is chosen and configured (see README.md)
+        $this->app->bind(PhotoComparer::class, fn () => match (config('services.photo_comparison.driver')) {
+            'openai_compatible' => new OpenAiCompatiblePhotoComparer(config('services.photo_comparison')),
+            default => new UnconfiguredPhotoComparer,
         });
     }
 

@@ -54,7 +54,9 @@ test('an area is one of the listed rooms or a short name of the resident\'s own'
 });
 
 test('editing a point shows and changes its area and follow-up date', function () {
-    $point = MonitoringPoint::factory()->create(['area' => 'Laundry area', 'follow_up_on' => '2026-12-01']);
+    $this->travelTo(CarbonImmutable::parse('2026-11-09 10:00', 'UTC'));
+    $point = plannedPoint(User::factory()->create(), 'Washer wall', '2026-12-01');
+    $point->update(['area' => 'Laundry area']);
 
     $this->actingAs($point->user)->get(route('points.edit', $point))
         ->assertOk()
@@ -133,7 +135,7 @@ test('follow-ups appear only for dates the resident chose, labelled by how near 
 
     // The earliest missed date is the next step; the other near dates are listed below it, earliest first
     $response->assertSeeInOrder(['Next step', 'Follow-up for Past spot', 'Past due', 'Planned follow-ups', 'Due today', 'Today spot', 'Due in 4 days', 'Soon spot']);
-    expect(Str::between($response->getContent(), 'Planned follow-ups', 'Recent observations'))
+    expect(Str::between($response->getContent(), 'Planned follow-ups', 'Recent photos'))
         ->not->toContain('Later spot')
         ->not->toContain('Unplanned spot');
 });
@@ -150,8 +152,8 @@ test('"due today" follows the resident\'s own time zone', function () {
 
 test('saving a photo completes a follow-up once its day has arrived, but keeps a date still ahead', function () {
     $this->travelTo(CarbonImmutable::parse('2026-11-09 09:00', 'UTC'));
-    $due = MonitoringPoint::factory()->create(['follow_up_on' => '2026-11-06']);
-    $soon = MonitoringPoint::factory()->for($due->user)->create(['follow_up_on' => '2026-11-12']);
+    $due = plannedPoint(User::factory()->create(), 'Due spot', '2026-11-06');
+    $soon = plannedPoint($due->user, 'Soon spot', '2026-11-12');
     $this->actingAs($due->user);
 
     $this->get(route('records.create', ['point' => $due]))->assertSee('Saving it completes the follow-up you planned for Fri 6 Nov.');
@@ -159,7 +161,7 @@ test('saving a photo completes a follow-up once its day has arrived, but keeps a
 
     $this->post(route('records.store'), ['monitoring_point_id' => $due->id, 'photo' => UploadedFile::fake()->image('a.jpg', 800, 600)])
         ->assertSessionHas('success', fn (string $message) => str_contains($message, 'completes the follow-up you planned for 6 November'));
-    // A baseline taken today leaves next week's plan in place
+    // A follow-up taken before the planned day leaves the plan in place
     $this->post(route('records.store'), ['monitoring_point_id' => $soon->id, 'photo' => UploadedFile::fake()->image('b.jpg', 800, 600)]);
 
     expect($due->fresh()->follow_up_on)->toBeNull()
@@ -179,4 +181,102 @@ test('the overview groups points by area, listed rooms first, with a link to eac
         ->assertSee(route('points.show', $gate))
         ->assertSee(route('points.create', ['area' => 'Laundry area']))
         ->assertSeeInOrder(['My home areas', 'id="area-bedroom"', 'Bed wall', 'id="area-exterior"', 'Gate post', 'id="area-laundry-area"', 'Washer wall', 'id="area-no-area-yet"', 'Loose spot'], false);
+});
+
+test('a baseline never completes a follow-up, and the message only says what happened', function () {
+    $this->travelTo(CarbonImmutable::parse('2026-11-09 09:00', 'UTC'));
+    // A date saved before planning needed a first photo
+    $point = MonitoringPoint::factory()->create(['follow_up_on' => '2026-11-06']);
+    $this->actingAs($point->user);
+
+    $this->get(route('records.create', ['point' => $point]))->assertDontSee('Saving it completes');
+
+    $this->post(route('records.store'), ['monitoring_point_id' => $point->id, 'photo' => UploadedFile::fake()->image('first.jpg', 800, 600)])
+        ->assertSessionHas('success', fn (string $message) => ! str_contains($message, 'follow-up'));
+
+    expect($point->fresh()->follow_up_on->toDateString())->toBe('2026-11-06');
+});
+
+test('a follow-up can only be planned once a spot has its first photo', function () {
+    $user = User::factory()->create();
+    $point = MonitoringPoint::factory()->for($user)->create();
+    $this->actingAs($user);
+
+    $this->patch(route('points.follow-up.update', $point), ['in_days' => 7])
+        ->assertSessionHasErrors(['follow_up_on' => 'Add the first photo of this spot before planning a follow-up.']);
+    $this->put(route('points.update', $point), ['label' => $point->label, 'follow_up_on' => now()->addWeek()->toDateString()])
+        ->assertSessionHasErrors('follow_up_on');
+    $this->post(route('points.store'), ['label' => 'New spot', 'follow_up_on' => now()->addWeek()->toDateString()])
+        ->assertSessionHasErrors('follow_up_on');
+    $this->get(route('points.edit', $point))->assertSee('You can plan a follow-up date after this spot’s first photo.');
+
+    expect($point->fresh()->follow_up_on)->toBeNull();
+});
+
+test('past dates are refused on the server, using the resident\'s own day', function () {
+    $this->travelTo(CarbonImmutable::parse('2026-11-09 18:00', 'UTC')); // already 10 November in Manila
+    $point = plannedPoint(User::factory()->create(), 'Stair wall', null);
+    $this->actingAs($point->user);
+
+    $this->patch(route('points.follow-up.update', $point), ['follow_up_on' => '2026-11-08'])
+        ->assertSessionHasErrors(['follow_up_on' => 'Choose today or a later date.']);
+    $this->put(route('points.update', $point), ['label' => 'Stair wall', 'follow_up_on' => '2026-11-08'])
+        ->assertSessionHasErrors(['follow_up_on' => 'Choose today or a later date.']);
+    $this->patch(route('points.follow-up.update', $point), ['follow_up_on' => '2032-01-01'])
+        ->assertSessionHasErrors(['follow_up_on' => 'Choose a date within the next five years.']);
+
+    // The 9th is still today in UTC, but already yesterday in Manila
+    $this->patch(route('points.follow-up.update', $point), ['follow_up_on' => '2026-11-09'])->assertSessionHasNoErrors();
+    $this->withUnencryptedCookie('rise_tz', 'Asia/Manila')
+        ->patch(route('points.follow-up.update', $point), ['follow_up_on' => '2026-11-09'])
+        ->assertSessionHasNoErrors(); // unchanged, so it may stay
+    $point->refresh()->update(['follow_up_on' => null]);
+    $this->withUnencryptedCookie('rise_tz', 'Asia/Manila')
+        ->patch(route('points.follow-up.update', $point), ['follow_up_on' => '2026-11-09'])
+        ->assertSessionHasErrors(['follow_up_on' => 'Choose today or a later date.']);
+});
+
+test('a date that has passed can stay while other details are edited', function () {
+    $this->travelTo(CarbonImmutable::parse('2026-11-09 10:00', 'UTC'));
+    $point = plannedPoint(User::factory()->create(), 'Hall ceiling', '2026-11-01');
+
+    $this->actingAs($point->user)
+        ->put(route('points.update', $point), ['label' => 'Hall ceiling, left side', 'follow_up_on' => '2026-11-01'])
+        ->assertSessionHasNoErrors();
+
+    expect($point->fresh())->label->toBe('Hall ceiling, left side')
+        ->and($point->fresh()->follow_up_on->toDateString())->toBe('2026-11-01');
+});
+
+test('after new spots and due follow-ups, a spot with only its baseline comes before comparing', function () {
+    $user = User::factory()->create();
+    $compared = MonitoringPoint::factory()->for($user)->create(['label' => 'Twice photographed']);
+    PhotoRecord::factory()->for($compared)->create(['submitted_at' => now()->subDays(3)]);
+    PhotoRecord::factory()->for($compared)->create(['submitted_at' => now()->subDay()]);
+    $baselineOnly = MonitoringPoint::factory()->for($user)->create(['label' => 'Photographed once']);
+    PhotoRecord::factory()->for($baselineOnly)->create(['submitted_at' => now()->subDays(10)]);
+
+    $this->actingAs($user)->get(route('overview'))
+        ->assertSee('Take the first follow-up of Photographed once')
+        ->assertDontSee('Compare Twice photographed');
+});
+
+test('the figures keep past-due and due-today apart, and show the next planned date when nothing is due', function () {
+    $this->travelTo(CarbonImmutable::parse('2026-11-09 10:00', 'UTC'));
+    $user = User::factory()->create();
+    plannedPoint($user, 'Later spot', '2026-11-20');
+    plannedPoint($user, 'Another later spot', '2026-12-05');
+    $this->actingAs($user);
+
+    $this->get(route('overview'))
+        ->assertSee('next follow-up · 2 planned')
+        ->assertSee('Fri 20 Nov')
+        ->assertDontSee('follow-ups due');
+
+    plannedPoint($user, 'Missed spot', '2026-11-02');
+    plannedPoint($user, 'Today spot', '2026-11-09');
+
+    $this->get(route('overview'))
+        ->assertSeeInOrder(['1', 'past due', '1', 'due today'])
+        ->assertDontSee('next follow-up ·');
 });

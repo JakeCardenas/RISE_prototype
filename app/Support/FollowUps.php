@@ -2,8 +2,10 @@
 
 namespace App\Support;
 
+use App\Models\MonitoringPoint;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
+use Closure;
 use DateTimeZone;
 use Illuminate\Http\Request;
 
@@ -27,6 +29,31 @@ class FollowUps
         $zone = in_array($zone, DateTimeZone::listIdentifiers(), true) ? $zone : config('app.timezone');
 
         return CarbonImmutable::now($zone)->startOfDay();
+    }
+
+    // The server's own checks on a date the resident picks (a date picker's minimum is only a hint): the spot needs its
+    // first photo before a follow-up can be planned, and the date can't be in the resident's past or more than five
+    // years ahead. A date that was already saved may be sent back unchanged, even after it has passed.
+    public static function dateRules(?MonitoringPoint $point, CarbonImmutable $today): array
+    {
+        return ['bail', 'nullable', 'date_format:Y-m-d', function (string $attribute, mixed $value, Closure $fail) use ($point, $today) {
+            if (! $point?->photoRecords()->exists()) {
+                $fail('Add the first photo of this spot before planning a follow-up.');
+            } elseif ($value === $point->follow_up_on?->toDateString()) {
+                return;
+            } elseif ($value < $today->toDateString()) {
+                $fail('Choose today or a later date.');
+            } elseif ($value > $today->addYears(5)->toDateString()) {
+                $fail('Choose a date within the next five years.');
+            }
+        }];
+    }
+
+    // A planned follow-up is done when a photo is saved once its day has arrived, and only if the spot already had its
+    // baseline: the first photo of a spot is its baseline, never a follow-up
+    public static function completedBy(MonitoringPoint $point, bool $hadBaseline, CarbonImmutable $today): bool
+    {
+        return $hadBaseline && in_array(self::status($point->follow_up_on, $today), ['past', 'today'], true);
     }
 
     // Whole days from today until the date: 0 is today, negative is past

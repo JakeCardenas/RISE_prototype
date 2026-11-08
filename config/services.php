@@ -45,4 +45,16 @@ return [
         'max_image_side' => (int) (env('ROBOFLOW_MAX_IMAGE_SIDE') ?: 1280),
     ],
 
+    // Optional AI comparison of two photos. Off until all of these are set: Roboflow's crack model looks at one photo at
+    // a time, so this needs a vision model that accepts two images, behind an OpenAI-compatible chat completions API.
+    'photo_comparison' => [
+        'driver' => env('RISE_COMPARISON_DRIVER'),                // "openai_compatible" turns it on
+        'provider_name' => env('RISE_COMPARISON_PROVIDER_NAME'),  // shown to residents before anything is sent
+        'api_url' => env('RISE_COMPARISON_API_URL'),
+        'api_key' => env('RISE_COMPARISON_API_KEY'),
+        'model' => env('RISE_COMPARISON_MODEL'),
+        'timeout' => (int) (env('RISE_COMPARISON_TIMEOUT') ?: 45),
+        'max_image_side' => (int) (env('RISE_COMPARISON_MAX_IMAGE_SIDE') ?: 1024),
+    ],
+
 ];

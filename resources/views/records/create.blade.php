@@ -9,14 +9,14 @@
     $reference = $selected?->latestRecord;
     $today = FollowUps::today();
     // Saving a photo once the planned day has arrived completes that follow-up, so the form says so beforehand
-    $plannedNote = fn ($point) => in_array(FollowUps::status($point->follow_up_on, $today), ['past', 'today'], true)
+    $plannedNote = fn ($point) => FollowUps::completedBy($point, (bool) $point->latestRecord, $today)
         ? 'Saving it completes the follow-up you planned for '.$point->follow_up_on->format('D j M').'.'
         : null;
 @endphp
 
 <x-layout :title="$titles[$mode] ?? 'Add photo'">
     <x-page-header :title="$titles[$mode] ?? 'Add photo'"
-        description="Photograph the same spot from the same place each time, so your photos are easy to compare."
+        description="Take it from the same place each time, so your photos are easy to compare."
         :back="$selected ? route('points.show', $selected) : route('overview')"
         :back-label="$selected ? $selected->label : 'Overview'" />
 
@@ -31,10 +31,10 @@
         <div class="grid grid-cols-[2.25rem_minmax(0,1fr)] gap-x-3 sheet p-5 sm:grid-cols-[2.75rem_minmax(0,1fr)] sm:p-6 lg:col-start-1">
             <span class="step-number mt-0.5" aria-hidden="true">1</span>
             <div class="min-w-0">
-                <label for="monitoring_point_id" class="field-label text-[1.0625rem]">Monitoring point</label>
+                <label for="monitoring_point_id" class="field-label text-[1.0625rem]">Spot</label>
                 <select id="monitoring_point_id" name="monitoring_point_id" class="field-control mt-2 max-w-xl" required data-point-select
                     aria-describedby="monitoring_point_id-error monitoring_point_id-mode" @error('monitoring_point_id') aria-invalid="true" @enderror>
-                    <option value="" disabled @selected(! $selected)>Choose a monitoring point</option>
+                    <option value="" disabled @selected(! $selected)>Choose a spot</option>
                     @foreach ($points as $point)
                         <option value="{{ $point->id }}" @selected($selected?->is($point))
                             data-next-label="{{ Observations::label($point->photo_records_count + 1) }}"
@@ -57,7 +57,7 @@
                     @endif
                 </p>
                 <a href="{{ route('points.create') }}" class="link mt-1 inline-flex min-h-11 items-center gap-1.5 text-sm">
-                    <x-icon name="plus" class="size-4" /> Add a new monitoring point
+                    <x-icon name="plus" class="size-4" /> Add a new spot
                 </a>
             </div>
         </div>
@@ -68,7 +68,7 @@
 
             <figure class="mt-5" data-reference @unless ($reference) hidden @endunless>
                 <div class="viewfinder mx-auto w-fit max-w-full">
-                    <img alt="Most recent photo of this monitoring point, to help you line up the same view"
+                    <img alt="Your last photo of this spot, to help you line up the same view"
                         @if ($reference) src="{{ route('records.photo', $reference) }}" @endif
                         class="print block h-auto max-h-64 w-auto max-w-full shadow-print">
                 </div>
@@ -80,11 +80,11 @@
             </figure>
 
             <p class="mt-4 text-sm text-muted" data-for-mode="baseline" @unless ($mode === 'baseline') hidden @endunless>
-                There’s no earlier photo of this spot yet. Choose a view you can find again, with a fixed feature such as a window corner or a light switch in the frame.
+                This spot has no photos yet. Choose a view you can find again, with something fixed in the frame, like a window corner or a switch.
             </p>
 
             <p class="mt-4 text-sm text-muted" data-for-mode="" @if ($mode) hidden @endif>
-                Choose a monitoring point to see its last photo here.
+                Choose a spot to see its last photo here.
             </p>
         </aside>
 
@@ -109,7 +109,7 @@
                         <x-icon name="chevron-down" class="size-4 shrink-0 text-muted transition-transform group-open:rotate-180" />
                     </summary>
                     <div class="px-2 pb-3">
-                        <img alt="Most recent photo of this monitoring point, to help you line up the same view"
+                        <img alt="Your last photo of this spot, to help you line up the same view"
                             @if ($reference) src="{{ route('records.photo', $reference) }}" @endif
                             class="print mx-auto block h-auto max-h-[50svh] w-auto max-w-full">
                         <p class="mt-2 px-1 text-sm text-muted">Stand where you stood for it. After you choose a photo, you can fade this one over it to compare the framing by eye.</p>
@@ -258,13 +258,12 @@
         <div class="flex items-start gap-3 pt-6 text-sm text-muted lg:col-start-1">
             <x-icon name="lock" class="mt-0.5 size-4 shrink-0 text-primary" />
             <p class="max-w-prose">
-                <strong class="font-semibold text-ink">Who can see this photo:</strong> only you, while signed in to your RISE account.
-                It’s kept in private storage on the server that runs RISE, not at a public web address. If the file holds location
-                details, RISE shows a copy without them and keeps the original privately.
+                <strong class="font-semibold text-ink">Only you can see this photo.</strong> It’s stored privately on the RISE server,
+                not at a public web address. If it holds location details, RISE shows a copy without them.
                 @if ($analysisReady)
-                    Nothing is sent to an outside service unless you later choose <strong class="font-semibold text-ink">Analyze with AI</strong> for this photo, which sends a copy to {{ Str::headline($provider) }}.
+                    Nothing goes to an outside service unless you later choose an AI option for it.
                 @else
-                    RISE doesn’t send it to any outside service.
+                    It isn’t sent to any outside service.
                 @endif
             </p>
         </div>

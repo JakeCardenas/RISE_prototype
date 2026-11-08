@@ -18,6 +18,12 @@ class PhotoRecordPolicy
         return $this->owner($user, $record);
     }
 
+    // Editing the resident's own note on a photo
+    public function update(User $user, PhotoRecord $record): Response
+    {
+        return $this->owner($user, $record);
+    }
+
     public function analyze(User $user, PhotoRecord $record): Response
     {
         return $this->owner($user, $record);

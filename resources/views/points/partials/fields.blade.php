@@ -15,12 +15,12 @@
 
 <x-input-field label="Name of this spot" name="label" :value="$point?->label" maxlength="80" required
     placeholder="Bedroom wall beside the window"
-    hint="A short name helps you find and photograph the same place each time. Describe the spot, not your address." />
+    hint="A short name, so you can find the same place each time. Describe the spot, not your address." />
 
 {{-- Room or area: one tap on a preset, or "Other" to name it; the name field appears only for "Other" --}}
 <fieldset class="area-picker mb-5" aria-describedby="area-hint">
     <legend class="field-label">Room or area (optional)</legend>
-    <p id="area-hint" class="field-hint">Groups your points on the Overview. Only the room is saved, never an address or unit number.</p>
+    <p id="area-hint" class="field-hint">Groups your spots on the Overview. Only the room is saved, never your address or unit number.</p>
 
     <div class="flex flex-wrap gap-2">
         @foreach (['' => 'Not set', ...array_combine(HomeAreas::PRESETS, HomeAreas::PRESETS), 'other' => 'Other…'] as $value => $text)
@@ -42,8 +42,13 @@
 </fieldset>
 
 <x-input-field label="Surface description (optional)" name="surface_description" type="textarea" :value="$point?->surface_description" maxlength="500"
-    hint="What the surface is and what you can see, such as “Painted plaster, thin crack running up from the window corner.”" />
+    hint="What the surface is and what you see, like “Painted plaster, thin crack from the window corner.”" />
 
-<x-input-field label="Next follow-up (optional)" name="follow_up_on" type="date" :value="$point?->follow_up_on?->toDateString()"
-    :min="FollowUps::today()->toDateString()" class="max-w-xs"
-    hint="The day you plan to photograph this spot again. It appears on your Overview as the day gets close. RISE doesn’t send emails or notifications." />
+{{-- A follow-up comes after the baseline, so a date can only be planned once the spot has its first photo --}}
+@if ($point?->photoRecords()->exists())
+    <x-input-field label="Next follow-up (optional)" name="follow_up_on" type="date" :value="$point->follow_up_on?->toDateString()"
+        :min="FollowUps::today()->toDateString()" class="max-w-xs"
+        hint="The day you plan to photograph it again. It shows on your Overview when the day is close. No emails or notifications." />
+@elseif ($point)
+    <p class="field-hint mb-5 flex items-start gap-2"><x-icon name="calendar" class="mt-0.5 size-4 shrink-0" /> You can plan a follow-up date after this spot’s first photo.</p>
+@endif

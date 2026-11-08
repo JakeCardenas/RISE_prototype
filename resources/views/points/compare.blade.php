@@ -20,9 +20,9 @@
             <h2 id="need-more-heading" class="mt-6 text-lg font-semibold text-heading">Add another photo to compare</h2>
             <p class="mx-auto mt-1 max-w-sm text-muted">
                 @if ($records->isEmpty())
-                    Comparing needs a baseline photo and at least one follow-up of this spot.
+                    You need a baseline photo and at least one follow-up of this spot.
                 @else
-                    Comparing needs a follow-up photo. Take it from the same place, distance and angle as the baseline.
+                    You need a follow-up photo, taken from the same place as the baseline.
                 @endif
             </p>
             <a href="{{ route('records.create', ['point' => $point]) }}" class="btn btn-primary mt-6">
@@ -129,27 +129,22 @@
                         </div>
                     </div>
                     <p class="meta mt-3">
-                        Drag across the photo, or use the arrow keys, to move the divider. The slider lays the same two photos over each other;
-                        if they weren’t taken from exactly the same place, edges won’t line up even where nothing has changed.
+                        Drag across the photo, or use the arrow keys, to move the divider. If the photos weren’t taken from the same place,
+                        edges won’t line up even where nothing changed.
                     </p>
                 </div>
             </div>
 
             {{-- What this view can and can't tell you, kept beside the photos --}}
             <div class="surface mt-10 flex items-start gap-3 rounded-2xl bg-well px-4 py-4 text-sm sm:px-5">
-                <x-icon name="info" class="mt-0.5 size-4 text-primary" />
-                <div class="max-w-prose space-y-1.5">
-                    <p>
-                        This is a visual, side-by-side view only. It can’t measure a crack’s width or length, and differences in
-                        light, angle or distance can look like change in the surface. It isn’t a safety assessment; if you’re
-                        worried about a crack, ask a qualified professional to inspect it.
-                    </p>
-                    <p>
-                        Comparing photos doesn’t send them anywhere. AI analysis is optional and only runs on a photo when you
-                        choose <strong class="font-semibold">Analyze with AI</strong> for it.
-                    </p>
-                </div>
+                <x-icon name="info" class="mt-0.5 size-4 shrink-0 text-primary" />
+                <p class="max-w-prose">
+                    This view only shows your photos. It can’t measure a crack, and changes in light, angle or distance can look like change.
+                    It isn’t a safety check; if you’re worried, ask a qualified professional. Nothing is sent anywhere unless you choose AI comparison below.
+                </p>
             </div>
+
+            @include('points.partials.ai-comparison')
         @endif
     @endif
 </x-layout>

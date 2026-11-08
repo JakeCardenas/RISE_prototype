@@ -115,7 +115,7 @@ test('a photo cannot be added to another resident\'s monitoring point', function
     $this->actingAs(User::factory()->create())->post(route('records.store'), [
         'monitoring_point_id' => $point->id,
         'photo' => UploadedFile::fake()->image('crack.jpg', 800, 600),
-    ])->assertSessionHasErrors(['monitoring_point_id' => 'Choose one of your monitoring points.']);
+    ])->assertSessionHasErrors(['monitoring_point_id' => 'Choose one of your spots.']);
 
     expect(PhotoRecord::count())->toBe(0)
         ->and(Storage::disk('local')->allFiles())->toBeEmpty();

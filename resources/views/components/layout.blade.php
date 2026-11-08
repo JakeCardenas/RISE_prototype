@@ -62,7 +62,7 @@
                         <x-icon name="home" class="size-[1.125rem]" /> Overview
                     </a>
 
-                    <p id="rail-points" class="mt-6 mb-1.5 px-3 text-xs font-semibold text-muted">Monitoring points</p>
+                    <p id="rail-points" class="mt-6 mb-1.5 px-3 text-xs font-semibold text-muted">Your spots</p>
                     <ul role="list" aria-labelledby="rail-points" class="-mx-1 min-h-0 flex-1 space-y-0.5 overflow-y-auto px-1 pb-3">
                         @foreach ($railGroups as $area => $group)
                             <li @class(['pt-2 first:pt-0' => $showAreas])>
@@ -85,7 +85,7 @@
                         @endforeach
                         <li>
                             <a href="{{ route('points.create') }}" class="rail-link text-primary" @if (request()->routeIs('points.create')) aria-current="page" @endif>
-                                <x-icon name="plus" class="size-[1.125rem]" /> New point
+                                <x-icon name="plus" class="size-[1.125rem]" /> New spot
                             </a>
                         </li>
                     </ul>
@@ -117,7 +117,7 @@
                         <span class="text-base leading-none font-bold tracking-[0.14em]">RISE</span>
                     </a>
                     <nav aria-label="Account" class="flex items-center gap-1">
-                        <a href="{{ route('login') }}" class="btn btn-quiet">Log in</a>
+                        <a href="{{ route('login') }}" class="btn btn-quiet">Sign in</a>
                         <a href="{{ route('register') }}" class="btn btn-primary">Register</a>
                     </nav>
                 </div>
@@ -164,10 +164,10 @@
 
                     <details data-menu>
                         <summary class="tab-link">
-                            <x-icon name="list" class="size-[1.375rem]" /> Points
+                            <x-icon name="list" class="size-[1.375rem]" /> Spots
                         </summary>
                         <div class="menu-panel fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+5.25rem)] mx-auto max-h-[60svh] max-w-md origin-bottom overflow-y-auto">
-                            <p id="sheet-points" class="px-3 pt-2 pb-1 text-sm font-semibold text-muted">Monitoring points</p>
+                            <p id="sheet-points" class="px-3 pt-2 pb-1 text-sm font-semibold text-muted">Your spots</p>
                             <ul role="list" aria-labelledby="sheet-points">
                                 @foreach ($railGroups as $area => $group)
                                     <li>
@@ -188,7 +188,7 @@
                                 @endforeach
                                 <li class="mt-1 border-t border-ink/10 pt-1">
                                     <a href="{{ route('points.create') }}" class="menu-item text-primary">
-                                        <x-icon name="plus" class="size-4" /> New point
+                                        <x-icon name="plus" class="size-4" /> New spot
                                     </a>
                                 </li>
                             </ul>

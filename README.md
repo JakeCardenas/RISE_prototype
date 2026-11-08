@@ -100,6 +100,46 @@ policy. If that matters for a deployment, use a self-hosted or dedicated inferen
 To use another provider, or a model the team trains on its own labelled images, implement
 `App\Services\Analysis\CrackDetector`, bind it in `AppServiceProvider`, and select it with `RISE_ANALYSIS_PROVIDER`.
 
+## Optional AI photo comparison
+
+On the Compare page, a resident can ask an AI model to describe possible differences between the two photos on
+screen: possible visible differences, and possible differences in how they were taken (angle, distance, framing,
+light). It's off until it's set up, never runs on its own, and never saves its wording as the resident's note.
+The resident can dismiss it, copy it, or edit it into their own note and save that themselves.
+
+The Roboflow integration above can't do this: it sends one photo to a single-image crack model and gets back marked
+areas, with no way to compare two photos or describe them. So the comparison needs a vision model that accepts two
+images. RISE talks to it through an OpenAI-compatible chat completions API, so it can be a hosted service or a model
+running on your own server. Nothing is chosen for you; until the variables below are set, residents see "AI comparison
+isn't set up" and nothing is sent.
+
+### Setup
+
+| Variable | Purpose | Default |
+|---|---|---|
+| `RISE_COMPARISON_DRIVER` | Set to `openai_compatible` to turn the feature on | — (off) |
+| `RISE_COMPARISON_PROVIDER_NAME` | The provider's name, shown to residents before they send anything | — (required) |
+| `RISE_COMPARISON_API_URL` | Base URL of the API, ending before `/chat/completions` | — (required) |
+| `RISE_COMPARISON_API_KEY` | The provider's API key, if it needs one (server only; never commit it) | — |
+| `RISE_COMPARISON_MODEL` | A vision model that accepts two images and can reply in JSON | — (required) |
+| `RISE_COMPARISON_TIMEOUT` | Seconds per request | `45` |
+| `RISE_COMPARISON_MAX_IMAGE_SIDE` | Longest side of each copy sent, in pixels | `1024` |
+
+Then run `php artisan config:clear` if config is cached, and restart the queue worker. A hosted provider may charge
+per request; check its pricing and data terms before turning it on.
+
+### What is sent, and what residents see
+
+- Before the button, residents see who receives the photos, what is sent (smaller copies of the two photos with
+  location and other embedded details removed) and what isn't (notes, spot names, account details).
+- The `ComparePhotos` job builds both copies in memory the same way as the crack analysis: upright, resized and
+  stripped of all metadata. The originals are never sent. The request holds a fixed instruction and the two images.
+- The instruction asks for short, cautious sentences and forbids measurements, causes, severity, repair advice and
+  safety judgments. As a second guard, any sentence that mentions sizes, causes, severity, risk, repairs,
+  inspections or safety is dropped before it's stored or shown. Raw responses are not stored.
+- Results are kept per pair of photos, owner-only, and removed with either photo. Failures are stored as safe error
+  codes, as with the crack analysis.
+
 ## Model note
 
 - **Candidate model:** Concrete Crack Ver.1 by “Concrete Crack” on Roboflow Universe,

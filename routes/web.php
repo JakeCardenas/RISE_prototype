@@ -9,6 +9,8 @@ use App\Http\Controllers\MonitoringPointController;
 use App\Http\Controllers\ObservationReportController;
 use App\Http\Controllers\OverviewController;
 use App\Http\Controllers\PhotoAnalysisController;
+use App\Http\Controllers\PhotoComparisonController;
+use App\Http\Controllers\PhotoNoteController;
 use App\Http\Controllers\PhotoRecordController;
 use App\Http\Controllers\PhotoRecordImageController;
 
@@ -44,6 +46,10 @@ Route::middleware('auth')->group(function() {
     Route::get('/records/{record}/analysis',        [PhotoAnalysisController::class, 'show'])->name('records.analysis.show');
     Route::post('/records/{record}/analysis',       [PhotoAnalysisController::class, 'store'])->name('records.analysis.store');
     Route::get('/records/{record}/analysis/status', [PhotoAnalysisController::class, 'status'])->name('records.analysis.status');
+    Route::patch('/records/{record}/note',          PhotoNoteController::class)->name('records.note.update');
+    Route::post('/points/{point}/ai-comparisons',   [PhotoComparisonController::class, 'store'])->name('points.ai-comparisons.store');
+    Route::get('/ai-comparisons/{comparison}/status',    [PhotoComparisonController::class, 'status'])->name('ai-comparisons.status');
+    Route::patch('/ai-comparisons/{comparison}/dismiss', [PhotoComparisonController::class, 'dismiss'])->name('ai-comparisons.dismiss');
 
     //NOTE ROUTES
     Route::get('/notes',             [NoteController::class, 'index'])->name('notes.index');

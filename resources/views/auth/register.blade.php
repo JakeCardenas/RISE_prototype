@@ -1,5 +1,5 @@
 <x-layout title="Register" bare>
-    <x-auth-card heading="Create your RISE account" intro="The photos you add are private to your account.">
+    <x-auth-card heading="Create your account" intro="Start a private photo record of cracks at home.">
         <form action="{{ route('register') }}" method="POST">
             @csrf
 
@@ -14,7 +14,7 @@
         @if (Route::has('login'))
             <p class="mt-6 text-muted">
                 Already registered?
-                <a href="{{ route('login') }}" class="link">Log in</a>
+                <a href="{{ route('login') }}" class="link">Sign in</a>
             </p>
         @endif
     </x-auth-card>

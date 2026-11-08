@@ -25,7 +25,7 @@ class PhotoRecordController extends Controller
 
         if ($points->isEmpty()) {
             return redirect()->route('points.create')
-                ->with('info', 'Before adding a photo, give the spot you want to monitor a short name.');
+                ->with('info', 'First, give the spot a short name.');
         }
 
         // Only the resident's own points can be preselected
@@ -45,6 +45,8 @@ class PhotoRecordController extends Controller
     {
         $user = $request->user();
         $point = $user->monitoringPoints()->findOrFail($request->validated('monitoring_point_id'));
+        // Checked before saving: the first photo of a spot is its baseline, so it can't complete a planned follow-up
+        $hadBaseline = $point->photoRecords()->exists();
         $photo = $request->file('photo');
         $mime = $photo->getMimeType();
         $disk = config('rise.photo_disk');
@@ -104,11 +106,8 @@ class PhotoRecordController extends Controller
             throw $e;
         }
 
-        // A photo saved once the planned day has arrived completes that follow-up; a date still ahead is kept, so a
-        // baseline taken today never clears the follow-up the resident planned for next week
-        $plannedFor = in_array(FollowUps::status($point->follow_up_on, FollowUps::today($request)), ['past', 'today'], true)
-            ? $point->follow_up_on
-            : null;
+        // A follow-up photo saved once the planned day has arrived completes it; a date still ahead is kept
+        $plannedFor = FollowUps::completedBy($point, $hadBaseline, FollowUps::today($request)) ? $point->follow_up_on : null;
 
         if ($plannedFor) {
             $point->update(['follow_up_on' => null]);

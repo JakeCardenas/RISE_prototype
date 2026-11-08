@@ -32,12 +32,14 @@ class OverviewController extends Controller
             ->sortByDesc(fn (MonitoringPoint $point) => ($point->latestRecord?->submitted_at ?? $point->created_at)->getTimestamp())
             ->values();
 
-        // Follow-ups due soon, today or already past, earliest date first; only points the resident gave a date
-        $reminders = $points
-            ->filter(fn (MonitoringPoint $point) => in_array(FollowUps::status($point->follow_up_on, $today), ['past', 'today', 'soon'], true))
+        // Follow-up dates the resident chose, earliest first; a follow-up needs a baseline, so spots without a photo are left out
+        $planned = $points
+            ->filter(fn (MonitoringPoint $point) => $point->follow_up_on && $point->photo_records_count > 0)
             ->sortBy(fn (MonitoringPoint $point) => $point->follow_up_on->toDateString())
             ->values();
+        $reminders = $planned->filter(fn (MonitoringPoint $point) => FollowUps::status($point->follow_up_on, $today) !== 'later')->values();
         $due = $reminders->filter(fn (MonitoringPoint $point) => FollowUps::daysUntil($point->follow_up_on, $today) <= 0)->values();
+        $upcoming = $planned->filter(fn (MonitoringPoint $point) => FollowUps::daysUntil($point->follow_up_on, $today) > 0)->values();
 
         $nextStep = $this->nextStep($points, $due);
 
@@ -48,8 +50,12 @@ class OverviewController extends Controller
             'areas' => HomeAreas::group($points),
             'photoCount' => $points->sum('photo_records_count'),
             'readyToCompare' => $points->where('photo_records_count', '>=', 2)->count(),
-            'scheduledCount' => $points->whereNotNull('follow_up_on')->count(),
-            'dueCount' => $due->count(),
+            // Kept apart, so a date that has passed is never counted as due today
+            'pastDueCount' => $due->filter(fn (MonitoringPoint $point) => FollowUps::daysUntil($point->follow_up_on, $today) < 0)->count(),
+            'dueTodayCount' => $due->filter(fn (MonitoringPoint $point) => FollowUps::daysUntil($point->follow_up_on, $today) === 0)->count(),
+            'planned' => $planned,
+            'upcomingCount' => $upcoming->count(),
+            'nextPlanned' => $upcoming->first()?->follow_up_on,
             'nextStep' => $nextStep,
             // The featured point isn't listed again below it
             'reminders' => $reminders->reject(fn (MonitoringPoint $point) => $point->is($nextStep['point'] ?? null))->values(),
@@ -57,8 +63,8 @@ class OverviewController extends Controller
         ]);
     }
 
-    // The one step most worth taking now: start, photograph a new point, a follow-up the resident planned for today or
-    // earlier, or else carry on with the most recently photographed point
+    // The one step most worth taking now: start; photograph a new spot; a follow-up the resident planned for today or
+    // earlier; a first follow-up for a spot that only has its baseline; or else compare the most recently photographed spot
     private function nextStep(Collection $points, Collection $due): array
     {
         if ($points->isEmpty()) {
@@ -75,11 +81,13 @@ class OverviewController extends Controller
             return ['kind' => 'due', 'point' => $due->first(), 'moreDue' => $due->count() - 1];
         }
 
-        $point = $points->first();
+        $baselineOnly = $points->first(fn (MonitoringPoint $point) => $point->photo_records_count === 1);
 
-        if ($point->photo_records_count < 2) {
-            return ['kind' => 'follow-up', 'point' => $point];
+        if ($baselineOnly) {
+            return ['kind' => 'follow-up', 'point' => $baselineOnly];
         }
+
+        $point = $points->first();
 
         return [
             'kind' => 'compare',

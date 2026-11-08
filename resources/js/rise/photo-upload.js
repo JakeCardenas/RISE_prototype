@@ -320,7 +320,7 @@ function enhance(form) {
         let firstProblem = null;
 
         if (!pointSelect.value) {
-            showError('monitoring_point_id', 'Choose the monitoring point this photo belongs to.');
+            showError('monitoring_point_id', 'Choose a spot for this photo.');
             firstProblem = pointSelect;
         }
 

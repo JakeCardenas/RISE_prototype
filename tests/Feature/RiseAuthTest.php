@@ -14,7 +14,10 @@ test('guests are sent to the login page', function () {
 test('the login page uses RISE wording', function () {
     $this->get(route('login'))
         ->assertOk()
-        ->assertSee('Log in to RISE')
+        ->assertSee('Welcome back')
+        ->assertSee('Sign in to see your photos and follow-ups.')
+        ->assertSeeTextInOrder(['Track cracks over time, one photo at a time.', 'Welcome back'])
+        ->assertDontSee('How RISE works')
         ->assertDontSee('My Notes');
 });
 

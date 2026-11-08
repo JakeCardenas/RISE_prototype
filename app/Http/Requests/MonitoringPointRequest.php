@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Support\FollowUps;
 use App\Support\HomeAreas;
 use Illuminate\Auth\Access\Response;
 use Illuminate\Foundation\Http\FormRequest;
@@ -26,7 +27,7 @@ class MonitoringPointRequest extends FormRequest
             'area' => ['nullable', 'string', Rule::in([...HomeAreas::PRESETS, 'other'])],
             'area_other' => ['nullable', 'required_if:area,other', 'string', 'max:40'],
             'surface_description' => ['nullable', 'string', 'max:500'],
-            'follow_up_on' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:2000-01-01', 'before_or_equal:2099-12-31'],
+            'follow_up_on' => FollowUps::dateRules($this->route('point'), FollowUps::today($this)),
         ];
     }
 
@@ -39,7 +40,7 @@ class MonitoringPointRequest extends FormRequest
             'area_other.required_if' => 'Name the area, such as “Laundry area” or “Bedroom 2”.',
             'area_other.max' => 'Keep the area name under 40 characters.',
             'surface_description.max' => 'Keep the description under 500 characters.',
-            'follow_up_on.*' => 'Choose a follow-up date from the calendar, or leave it empty.',
+            'follow_up_on.date_format' => 'Choose a follow-up date from the calendar, or leave it empty.',
         ];
     }
 

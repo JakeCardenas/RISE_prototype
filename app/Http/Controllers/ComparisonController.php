@@ -3,15 +3,17 @@
 namespace App\Http\Controllers;
 
 use App\Models\MonitoringPoint;
+use App\Models\PhotoComparison;
 use App\Models\PhotoRecord;
+use App\Services\Comparison\PhotoComparer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
 
 class ComparisonController extends Controller
 {
-    // READ — two photos of the same monitoring point, earlier one first
-    public function __invoke(Request $request, MonitoringPoint $point)
+    // READ — two photos of the same spot, earlier one first, with any AI comparison the resident asked for
+    public function __invoke(Request $request, MonitoringPoint $point, PhotoComparer $comparer)
     {
         Gate::authorize('view', $point);
 
@@ -36,6 +38,11 @@ class ComparisonController extends Controller
             'earlier' => $earlier,
             'later' => $later,
             'samePhoto' => $first->is($second),
+            'comparer' => $comparer,
+            // The latest AI comparison of this exact pair that the resident hasn't dismissed
+            'aiComparison' => PhotoComparison::query()
+                ->where('earlier_record_id', $earlier->id)->where('later_record_id', $later->id)
+                ->whereNull('dismissed_at')->latest('requested_at')->latest('id')->first(),
         ]);
     }
 

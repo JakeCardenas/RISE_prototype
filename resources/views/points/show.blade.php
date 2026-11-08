@@ -23,7 +23,7 @@
                 <span>{{ trans_choice('{0} No photos yet|{1} 1 photo|[2,*] :count photos', $recordCount) }}</span>
                 <span aria-hidden="true">·</span>
                 <a href="{{ route('points.edit', $point) }}" class="link inline-flex min-h-11 items-center gap-1">
-                    <x-icon name="pencil" class="size-4" /> Edit point
+                    <x-icon name="pencil" class="size-4" /> Edit spot
                 </a>
             </p>
         </x-slot:meta>
@@ -51,7 +51,7 @@
             <aside aria-labelledby="passport-title" class="rail rounded-sheet bg-rail p-5 text-rail-text shadow-sheet sm:p-6">
                 <h2 id="passport-title" class="text-lg font-semibold">Observation passport</h2>
                 <p class="mt-1.5 text-sm text-rail-muted">
-                    A guided photo record of this spot. Your first photo becomes the baseline; later photos from the same place are follow-ups you can compare with it.
+                    Your photo record of this spot. The first photo is the baseline; later photos from the same place are follow-ups.
                 </p>
                 <ol class="mt-5 space-y-3 border-t border-white/10 pt-5 text-sm">
                     @foreach (['Take a baseline photo', 'Come back for follow-ups', 'Compare them and print a report'] as $step)
@@ -116,12 +116,12 @@
 
                 <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 border-t border-line px-4 py-3 sm:px-5">
                     @if ($hasFollowUp)
-                        <p class="max-w-md text-sm text-muted">Differences in light, angle or distance can look like change, so compare the photos closely before drawing conclusions.</p>
+                        <p class="max-w-md text-sm text-muted">Changes in light, angle or distance can look like change, so look closely before deciding anything.</p>
                         <a href="{{ route('points.compare', [$point, 'first' => $baseline->id, 'second' => $latest->id]) }}" class="btn btn-secondary">
                             <x-icon name="split" class="size-4" /> Compare before and after
                         </a>
                     @else
-                        <p class="text-sm text-muted">Comparing starts once this spot has a follow-up photo taken from the same place.</p>
+                        <p class="text-sm text-muted">You can compare once this spot has a follow-up photo.</p>
                     @endif
                 </div>
             </div>
@@ -129,7 +129,7 @@
             {{-- The passport: what this record holds, and the next step --}}
             <aside aria-labelledby="passport-title" class="rail rounded-sheet bg-rail p-5 text-rail-text shadow-sheet sm:p-6">
                 <h2 id="passport-title" class="text-lg font-semibold">Observation passport</h2>
-                <p class="mt-1.5 text-sm text-rail-muted">A guided photo record of this spot: one baseline photo, then follow-ups taken from the same place.</p>
+                <p class="mt-1.5 text-sm text-rail-muted">One baseline photo, then follow-ups from the same place.</p>
 
                 <dl class="mt-5 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-white/10 pt-5 text-sm">
                     <div>
@@ -200,7 +200,7 @@
                         </div>
                     </details>
 
-                    <p class="mt-3 text-sm text-rail-muted">Return to the same spot. RISE shows your last photo so you can match the angle and distance.</p>
+                    <p class="mt-3 text-sm text-rail-muted">Go back to the same place. RISE shows your last photo so you can match the view.</p>
                     <a href="{{ $addUrl }}" class="btn btn-on-rail mt-4 w-full"><x-icon name="camera" /> Add follow-up photo</a>
                     <a href="{{ route('points.report', $point) }}" class="mt-2 flex min-h-11 items-center justify-center gap-2 rounded-control text-sm font-semibold hover:bg-rail-soft">
                         <x-icon name="printer" class="size-4" /> Print or save report
@@ -216,7 +216,7 @@
         <section aria-labelledby="timeline-heading" class="mt-14">
             <div class="section-head">
                 <h2 id="timeline-heading" class="section-title">Observation timeline</h2>
-                <p class="meta">Oldest first · “Saved” is when RISE received each photo</p>
+                <p class="meta">Oldest first · “Saved” is when RISE got each photo</p>
             </div>
 
             <ol role="list" class="sheet mt-4 px-3 sm:px-6 [&>li:last-child_article]:border-b-0">

@@ -66,7 +66,7 @@
                             <dt>In this report</dt>
                             <dd>
                                 @if ($complete)
-                                    {{ trans_choice('{1} The only photo of this point|[2,*] All :count photos of this point', $total) }}
+                                    {{ trans_choice('{1} The only photo of this spot|[2,*] All :count photos of this spot', $total) }}
                                 @else
                                     Part {{ $part }} of {{ $records->lastPage() }}: {{ $range($records->firstItem(), $records->lastItem()) }} of {{ $total }}
                                 @endif
@@ -105,10 +105,10 @@
                 <h2 id="about-heading" class="section-title">About this report</h2>
                 <p class="mt-2 max-w-prose">
                     @if ($complete)
-                        This report lists {{ $total === 1 ? 'the only photo' : 'all '.$total.' photos' }} saved in RISE for this monitoring point, oldest first.
+                        This report lists {{ $total === 1 ? 'the only photo' : 'all '.$total.' photos' }} saved in RISE for this spot, oldest first.
                     @else
                         This is part {{ $part }} of {{ $records->lastPage() }}. It lists {{ $range($records->firstItem(), $records->lastItem()) }}
-                        of the {{ $total }} saved in RISE for this monitoring point, oldest first; the other parts list the rest.
+                        of the {{ $total }} saved in RISE for this spot, oldest first; the other parts list the rest.
                     @endif
                     The first photo is the baseline; later photos are follow-ups the resident took at the same spot.
                 </p>
@@ -126,7 +126,7 @@
                 <h2 id="photos-heading" class="section-title">Photos</h2>
 
                 @if ($records->isEmpty())
-                    <p class="mt-3 text-muted">No photos have been saved for this monitoring point yet.</p>
+                    <p class="mt-3 text-muted">No photos have been saved for this spot yet.</p>
                 @endif
 
                 <ol class="mt-4">
