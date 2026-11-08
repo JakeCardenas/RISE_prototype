@@ -1,5 +1,5 @@
 <x-layout title="Sign in" bare>
-    <x-auth-card heading="Welcome back" intro="Sign in to see your photos and follow-ups.">
+    <x-auth-card heading="Welcome back" intro="Sign in to see your spots and follow-ups.">
         <form action="{{ route('login') }}" method="POST">
             @csrf
 

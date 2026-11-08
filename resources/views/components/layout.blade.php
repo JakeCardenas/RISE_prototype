@@ -74,8 +74,8 @@
                                         <li>
                                             <a href="{{ route('points.show', $point) }}" class="rail-link justify-between" @if ($pointCurrent($point)) aria-current="{{ $pointCurrent($point) }}" @endif>
                                                 <span class="truncate">{{ $point->label }}</span>
-                                                <span class="shrink-0 text-xs text-muted tabular-nums">
-                                                    {{ $point->photo_records_count }}<span class="sr-only"> {{ Str::plural('photo', $point->photo_records_count) }}</span>
+                                                <span class="flex shrink-0 items-center gap-1 text-xs text-muted tabular-nums">
+                                                    <x-icon name="image" class="size-3.5" />{{ $point->photo_records_count }}<span class="sr-only"> {{ Str::plural('photo', $point->photo_records_count) }}</span>
                                                 </span>
                                             </a>
                                         </li>

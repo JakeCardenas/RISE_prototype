@@ -1,7 +1,7 @@
 <x-layout :title="'Edit '.$point->label" width="narrow">
     <x-page-header title="Edit spot" :back="route('points.show', $point)" :back-label="$point->label" />
 
-    <form method="POST" action="{{ route('points.update', $point) }}" class="sheet p-5 sm:p-7" novalidate>
+    <form method="POST" action="{{ route('points.update', $point) }}" class="sheet sheet-solid p-5 sm:p-7" novalidate>
         @csrf
         @method('PUT')
 
@@ -14,7 +14,7 @@
     </form>
 
     {{-- Kept apart from the form, with its own confirmation step --}}
-    <section class="sheet mt-8 p-5 sm:p-7" aria-labelledby="delete-heading">
+    <section class="sheet sheet-solid mt-8 p-5 sm:p-7" aria-labelledby="delete-heading">
         <h2 id="delete-heading" class="flex items-center gap-2 text-lg font-semibold text-danger">
             <x-icon name="alert-triangle" /> Delete this spot
         </h2>

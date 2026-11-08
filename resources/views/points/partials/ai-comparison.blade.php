@@ -5,7 +5,7 @@
     provider and what is sent are stated first, and the result is never saved as the resident's own note: they can
     dismiss it, copy it, or edit it into their note and save that themselves.
 --}}
-<section id="ai-comparison" aria-labelledby="ai-comparison-title" class="sheet mt-10 scroll-mt-28 p-5 sm:p-7">
+<section id="ai-comparison" aria-labelledby="ai-comparison-title" class="sheet sheet-solid mt-10 scroll-mt-28 p-5 sm:p-7">
     <h2 id="ai-comparison-title" class="section-title flex flex-wrap items-center gap-x-2.5 gap-y-1">
         <x-icon name="scan" class="text-primary" /> AI comparison <span class="tag">Optional</span>
     </h2>

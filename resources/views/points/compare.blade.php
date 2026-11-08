@@ -91,7 +91,7 @@
                     </fieldset>
                 </div>
 
-                <div class="sheet mt-5 grid gap-6 p-4 sm:p-6 md:grid-cols-2" data-compare-side>
+                <div class="sheet sheet-solid mt-5 grid gap-6 p-4 sm:p-6 md:grid-cols-2" data-compare-side>
                     @foreach (['Earlier' => $earlier, 'Later' => $later] as $position => $record)
                         <figure class="flex min-w-0 flex-col">
                             <figcaption class="mb-3 flex flex-wrap items-baseline justify-between gap-x-3 border-b border-line pb-2">
@@ -114,7 +114,7 @@
 
                 @php($ratio = $earlier->viewWidth() && $earlier->viewHeight() ? $earlier->viewWidth() / $earlier->viewHeight() : 4 / 3)
                 <div class="mt-5" data-compare-wipe hidden>
-                    <div class="sheet p-3 sm:p-5">
+                    <div class="sheet sheet-solid p-3 sm:p-5">
                         <div class="wipe mx-auto" data-wipe style="aspect-ratio: {{ round($ratio, 4) }}; width: min(100%, calc(68svh * {{ round($ratio, 4) }}))">
                             <x-record-photo :record="$earlier" :alt="$labelFor($earlier).' photo of '.$point->label.', saved '.$earlier->submitted_at->format('j M Y')" class="" />
                             <div class="wipe-later">

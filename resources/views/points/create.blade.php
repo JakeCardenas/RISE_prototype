@@ -3,7 +3,7 @@
         description="One place you’ll photograph again and again, like a crack above a door. Use a separate spot for each place." />
 
     <div class="grid items-start gap-10 lg:grid-cols-[minmax(0,38rem)_minmax(0,1fr)]">
-        <form method="POST" action="{{ route('points.store') }}" class="sheet p-5 sm:p-7" novalidate>
+        <form method="POST" action="{{ route('points.store') }}" class="sheet sheet-solid p-5 sm:p-7" novalidate>
             @csrf
 
             @include('points.partials.fields', ['point' => null])

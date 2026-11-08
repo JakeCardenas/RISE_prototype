@@ -1,7 +1,7 @@
 <x-layout title="Edit note" width="narrow">
     <x-page-header title="Edit note" :back="route('notes.index')" back-label="Notes" />
 
-    <form action="{{ route('notes.update', $note) }}" method="POST" class="sheet p-5 sm:p-7">
+    <form action="{{ route('notes.update', $note) }}" method="POST" class="sheet sheet-solid p-5 sm:p-7">
         @csrf
         @method('PUT')
 

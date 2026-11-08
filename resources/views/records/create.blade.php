@@ -28,7 +28,7 @@
         @csrf
 
         {{-- Step 1: which spot the photo belongs to --}}
-        <div class="grid grid-cols-[2.25rem_minmax(0,1fr)] gap-x-3 sheet p-5 sm:grid-cols-[2.75rem_minmax(0,1fr)] sm:p-6 lg:col-start-1">
+        <div class="grid grid-cols-[2.25rem_minmax(0,1fr)] gap-x-3 sheet sheet-solid p-5 sm:grid-cols-[2.75rem_minmax(0,1fr)] sm:p-6 lg:col-start-1">
             <span class="step-number mt-0.5" aria-hidden="true">1</span>
             <div class="min-w-0">
                 <label for="monitoring_point_id" class="field-label text-[1.0625rem]">Spot</label>
@@ -89,7 +89,7 @@
         </aside>
 
         {{-- Step 2: the photo itself --}}
-        <div class="grid grid-cols-[2.25rem_minmax(0,1fr)] gap-x-3 sheet mt-3 p-5 sm:grid-cols-[2.75rem_minmax(0,1fr)] sm:p-6 lg:col-start-1">
+        <div class="grid grid-cols-[2.25rem_minmax(0,1fr)] gap-x-3 sheet sheet-solid mt-3 p-5 sm:grid-cols-[2.75rem_minmax(0,1fr)] sm:p-6 lg:col-start-1">
             <span class="step-number mt-0.5" aria-hidden="true">2</span>
             <fieldset class="min-w-0">
                 <legend class="field-label text-[1.0625rem]">Photo</legend>
@@ -243,7 +243,7 @@
         </div>
 
         {{-- Step 3: an optional note --}}
-        <div class="grid grid-cols-[2.25rem_minmax(0,1fr)] gap-x-3 sheet mt-3 p-5 sm:grid-cols-[2.75rem_minmax(0,1fr)] sm:p-6 lg:col-start-1">
+        <div class="grid grid-cols-[2.25rem_minmax(0,1fr)] gap-x-3 sheet sheet-solid mt-3 p-5 sm:grid-cols-[2.75rem_minmax(0,1fr)] sm:p-6 lg:col-start-1">
             <span class="step-number mt-0.5" aria-hidden="true">3</span>
             <div class="min-w-0">
                 <label for="note" class="field-label text-[1.0625rem]">Note <span class="font-normal text-muted">(optional)</span></label>

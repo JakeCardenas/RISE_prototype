@@ -40,15 +40,16 @@
         @if ($points->isEmpty())
             <p class="mt-2 text-[1.0625rem] text-muted">Track cracks over time, one photo at a time.</p>
         @else
-            <dl class="mt-5 flex flex-wrap gap-x-8 gap-y-4">
+            {{-- The figures as one compact strip on thin glass, so they read as a summary rather than loose numbers --}}
+            <dl @class(['stat-bar glass-thin mt-5', 'stat-bar-wrap' => $figures->count() > 3])>
                 @foreach ($figures as $figure)
-                    <div class="flex min-w-0 flex-col-reverse">
-                        <dt class="mt-1 text-sm leading-snug text-muted">{{ $figure['label'] ?? $figure[1] }}</dt>
+                    <div>
+                        <dt class="mt-1.5 text-[0.8125rem] leading-snug text-muted">{{ $figure['label'] ?? $figure[1] }}</dt>
                         <dd class="leading-none font-semibold tracking-[-0.03em] text-heading tabular-nums">
                             @isset($figure['date'])
-                                <x-calendar-date :date="$figure['date']" format="calendarshort" class="text-[1.375rem] sm:text-[1.625rem]" />
+                                <x-calendar-date :date="$figure['date']" format="calendarshort" class="text-[1.25rem] sm:text-[1.375rem]" />
                             @else
-                                <span class="text-[1.75rem] sm:text-[2rem]">{{ $figure[0] }}</span>
+                                <span class="text-[1.625rem] sm:text-[1.75rem]">{{ $figure[0] }}</span>
                             @endisset
                         </dd>
                     </div>
@@ -73,14 +74,26 @@
                 @foreach ([[$nextStep['baseline'], 1], [$stepLatest, $stepPoint->photo_records_count]] as [$record, $position])
                     <figure class="min-w-0">
                         <x-fitted-photo :record="$record" :alt="$photoAlt($record, $stepPoint, $position)" loading="eager" />
-                        <figcaption class="mt-2 text-center text-xs font-semibold text-muted">{{ Observations::label($position) }}</figcaption>
+                        <figcaption class="mt-2 text-center text-xs leading-snug text-muted">
+                            <span class="block font-semibold text-heading">{{ Observations::label($position) }}</span>
+                            <x-local-time :time="$record->submitted_at" format="date" />
+                        </figcaption>
                     </figure>
                 @endforeach
             </div>
         @else
             <figure class="flex flex-col justify-center bg-well p-3 [--photo-max:12rem] sm:p-4 md:[--photo-max:21rem]">
                 <x-fitted-photo :record="$stepLatest" :alt="$photoAlt($stepLatest, $stepPoint, $stepPoint->photo_records_count)" loading="eager" />
-                <figcaption class="mt-2 text-center text-xs font-semibold text-muted">Your last photo of this spot</figcaption>
+                {{-- What this photo is, when it was saved and where: the context for matching it --}}
+                <figcaption class="mt-2.5 flex flex-wrap items-center justify-center gap-x-1.5 gap-y-0.5 text-center text-xs text-muted">
+                    <span class="font-semibold text-heading">Your last photo</span>
+                    <span aria-hidden="true">·</span>
+                    <span>Saved <x-local-time :time="$stepLatest->submitted_at" format="date" /></span>
+                    @if ($stepPoint->area)
+                        <span aria-hidden="true">·</span>
+                        <span class="inline-flex items-center gap-1"><x-icon name="home" class="size-3.5" /> {{ $stepPoint->area }}</span>
+                    @endif
+                </figcaption>
             </figure>
         @endif
 
@@ -153,14 +166,15 @@
             @endswitch
 
             @if ($stepPoint)
-                {{-- Where the spot is, and what the resident has planned for it --}}
-                @if ($stepPoint->area || ($step !== 'due' && $stepPoint->follow_up_on && $stepPoint->photo_records_count))
+                {{-- Where the spot is (unless the photo's caption already says), and what the resident has planned for it --}}
+                @php($showArea = $stepPoint->area && ! in_array($step, ['due', 'follow-up'], true))
+                @if ($showArea || ($step !== 'due' && $stepPoint->follow_up_on && $stepPoint->photo_records_count))
                     <p class="meta mt-3 flex flex-wrap items-center gap-x-2 gap-y-1">
-                        @if ($stepPoint->area)
+                        @if ($showArea)
                             <span class="inline-flex items-center gap-1.5"><x-icon name="home" class="size-4" /> {{ $stepPoint->area }}</span>
                         @endif
                         @if ($step !== 'due' && $stepPoint->follow_up_on && $stepPoint->photo_records_count)
-                            @if ($stepPoint->area) <span aria-hidden="true">·</span> @endif
+                            @if ($showArea) <span aria-hidden="true">·</span> @endif
                             <span class="inline-flex items-center gap-1.5"><x-icon name="calendar" class="size-4" /> Follow-up planned for <x-calendar-date :date="$stepPoint->follow_up_on" format="calendarshort" /></span>
                         @endif
                     </p>
@@ -301,9 +315,7 @@
                 @if ($areas->count() > 1)
                     <nav aria-label="Jump to a room" class="mt-3 flex flex-wrap gap-2">
                         @foreach ($areas as $area => $group)
-                            <a href="#{{ HomeAreas::anchor($area) }}" class="glass-thin inline-flex min-h-10 items-center gap-2 rounded-full px-3.5 text-sm font-semibold text-ink">
-                                {{ $area }} <span class="text-muted tabular-nums">{{ $group->count() }}</span>
-                            </a>
+                            <a href="#{{ HomeAreas::anchor($area) }}" class="glass-thin inline-flex min-h-11 items-center rounded-full px-4 text-sm font-semibold text-ink">{{ $area }}</a>
                         @endforeach
                     </nav>
                 @endif
@@ -315,7 +327,9 @@
                             <div class="flex min-h-12 items-center justify-between gap-3 border-b border-line py-1.5 pr-2 pl-4 sm:pl-5">
                                 <h3 id="{{ HomeAreas::anchor($area) }}-title" class="flex items-center gap-2 font-semibold text-heading">
                                     <x-icon :name="$unsorted ? 'list' : 'home'" class="size-4 text-primary" /> {{ $area }}
-                                    <span class="text-sm font-normal text-muted tabular-nums">{{ $group->count() }}</span>
+                                    @unless ($unsorted)
+                                        <span class="text-sm font-normal text-muted">{{ trans_choice('{1} 1 spot|[2,*] :count spots', $group->count()) }}</span>
+                                    @endunless
                                 </h3>
                                 @if ($unsorted)
                                     <p class="meta pr-3">No room chosen</p>

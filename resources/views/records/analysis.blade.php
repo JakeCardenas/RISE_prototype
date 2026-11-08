@@ -76,7 +76,7 @@
         {{-- One block per state, all with the same order: what is happening, then what you can do --}}
         <section aria-labelledby="result-heading" class="min-w-0 space-y-6">
             @if (! $analysis || $status === PhotoAnalysis::NOT_CONFIGURED)
-                <div class="sheet p-5 sm:p-7">
+                <div class="sheet sheet-solid p-5 sm:p-7">
                     @if ($detector->isConfigured())
                         <h2 id="result-heading" class="flex items-center gap-2.5 section-title">
                             <x-icon name="scan" class="text-primary" /> Check this photo with AI
@@ -117,7 +117,7 @@
                     @endif
                 </div>
             @elseif ($analysis->isWaiting())
-                <div class="sheet p-5 sm:p-7" data-analysis-waiting data-status-url="{{ route('records.analysis.status', $record) }}">
+                <div class="sheet sheet-solid p-5 sm:p-7" data-analysis-waiting data-status-url="{{ route('records.analysis.status', $record) }}">
                     <h2 id="result-heading" class="flex items-center gap-2.5 section-title" role="status">
                         <x-icon name="clock" class="text-primary" /> Analyzing photo…
                     </h2>
@@ -149,7 +149,7 @@
                     <p class="mt-3 text-sm text-muted">Trying again sends a copy of this photo, without location details, to {{ $providerName }} again.</p>
                 </div>
             @else
-                <div class="sheet p-5 sm:p-7">
+                <div class="sheet sheet-solid p-5 sm:p-7">
                     <h2 id="result-heading" class="flex items-start gap-3 section-title">
                         {{-- The same magenta as the outlines, so the heading and the photo read together --}}
                         <span class="mt-[0.3125rem] size-3.5 shrink-0 rounded-[3px] border-2 border-mark bg-mark/20" aria-hidden="true"></span>
@@ -171,7 +171,7 @@
                     @endif
                 </div>
 
-                <div class="sheet p-5 sm:p-7">
+                <div class="sheet sheet-solid p-5 sm:p-7">
                     <h2 class="section-title">About this result</h2>
                     <dl class="title-block mt-4">
                         <div class="col-span-2">

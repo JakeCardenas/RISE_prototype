@@ -1,7 +1,7 @@
 <x-layout title="New note" width="narrow">
     <x-page-header title="New note" :back="route('notes.index')" back-label="Notes" />
 
-    <form action="{{ route('notes.store') }}" method="POST" class="sheet p-5 sm:p-7">
+    <form action="{{ route('notes.store') }}" method="POST" class="sheet sheet-solid p-5 sm:p-7">
         @csrf
 
         <x-input-field label="Title" name="title" maxlength="100" />

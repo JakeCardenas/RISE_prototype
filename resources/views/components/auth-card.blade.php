@@ -1,6 +1,6 @@
 @props(['heading', 'intro' => null])
 
-{{-- Sign in and register: one clear glass window in the RISE environment, with the form on a solid white panel inside it --}}
+{{-- Sign in and register: one clear glass window in the RISE environment, with the form on a near-solid sage-white panel inside it --}}
 <div class="flex min-h-dvh flex-col items-center justify-center px-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-10">
     <div class="glass glass-enter grid w-full max-w-4xl gap-2 rounded-[2rem] p-2 sm:p-2.5 lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)]">
         {{-- The brand and its promise together at the top; what RISE is and whose study it belongs to at the foot --}}
@@ -9,10 +9,7 @@
                 <span class="brand-tile brand-tile-hero size-14 sm:size-16 lg:size-20">
                     <x-rise-mark class="size-10.5 sm:size-12 lg:size-15" />
                 </span>
-                <span>
-                    <span class="block text-[1.625rem] leading-none font-extrabold tracking-[0.12em] text-heading sm:text-[1.875rem] lg:text-[2rem]">RISE</span>
-                    <span class="mt-2 block text-sm leading-none font-medium text-muted lg:text-[0.9375rem]">Home photo journal</span>
-                </span>
+                <span class="text-[1.625rem] leading-none font-extrabold tracking-[0.12em] text-heading sm:text-[1.875rem] lg:text-[2rem]">RISE</span>
             </a>
 
             <p class="mt-6 max-w-sm text-[1.5rem] leading-[1.15] font-bold tracking-[-0.03em] text-balance text-heading sm:mt-8 sm:text-[2rem] lg:mt-11 lg:text-[2.375rem]">
@@ -25,7 +22,7 @@
             </div>
         </section>
 
-        <div class="surface rounded-[1.5rem] bg-surface p-6 shadow-sheet sm:p-9">
+        <div class="sheet sheet-solid p-6 sm:p-9">
             @if (session('success'))
                 <x-alert>{{ session('success') }}</x-alert>
             @endif

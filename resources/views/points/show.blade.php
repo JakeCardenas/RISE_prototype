@@ -60,7 +60,7 @@
     @else
         <section aria-labelledby="pair-heading" class="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
             {{-- The baseline beside the latest photo, or the baseline alone while its first follow-up is still to take --}}
-            <div class="sheet overflow-hidden">
+            <div class="sheet sheet-solid overflow-hidden">
                 <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 border-b border-line px-4 py-3 sm:px-5">
                     <h2 id="pair-heading" class="font-semibold text-heading">{{ $hasFollowUp ? 'Baseline and latest photo' : 'Baseline photo' }}</h2>
                     @if ($apart)
@@ -226,7 +226,7 @@
                 <p class="meta">Oldest first · “Saved” is when RISE got each photo</p>
             </div>
 
-            <ol role="list" class="sheet mt-4 px-3 sm:px-6 [&>li:last-child_article]:border-b-0">
+            <ol role="list" class="sheet sheet-solid mt-4 px-3 sm:px-6 [&>li:last-child_article]:border-b-0">
                 @foreach ($items as $record)
                     @php
                         $position = $records->firstItem() + $loop->index;

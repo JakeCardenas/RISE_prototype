@@ -130,28 +130,43 @@
  | the viewer asks for less transparency or more contrast, glass becomes solid deep green.
  */
 :root {
-    --glass-thin: rgb(14 28 20 / 0.3);
-    --glass-regular: rgb(14 28 20 / 0.22);
-    --glass-thick: rgb(14 28 20 / 0.32);
-    --glass-blur-thin: 14px;
-    --glass-blur-regular: 24px;
-    --glass-blur-thick: 32px;
-    --glass-saturate: 1.6;
-    --glass-brightness: 1.12;
-    --glass-sheen: linear-gradient(160deg, rgb(255 255 255 / 0.13), rgb(255 255 255 / 0.04) 32%, rgb(255 255 255 / 0) 56%);
-    --glass-rim: inset 0 0 0 1px rgb(255 255 255 / 0.14), inset 0 1px 0 rgb(255 255 255 / 0.3);
+    --glass-thin: rgb(20 38 28 / 0.2);
+    --glass-regular: rgb(20 38 28 / 0.14);
+    --glass-thick: rgb(20 38 28 / 0.22);
+    --glass-blur-thin: 16px;
+    --glass-blur-regular: 26px;
+    --glass-blur-thick: 34px;
+    --glass-saturate: 1.7;
+    --glass-brightness: 1.28;
+    --glass-sheen: linear-gradient(
+        160deg,
+        rgb(255 255 255 / 0.12),
+        rgb(255 255 255 / 0.04) 30%,
+        rgb(255 255 255 / 0) 55%,
+        rgb(255 255 255 / 0.04)
+    );
+    --glass-rim: inset 0 0 0 1px rgb(255 255 255 / 0.22), inset 0 1px 0 rgb(255 255 255 / 0.5),
+        inset 0 -1px 0 rgb(255 255 255 / 0.08), inset 0 0 28px rgb(255 255 255 / 0.05);
 
     /*
-     | The dimming over the photo: dark green-charcoal, lightest through the middle. Together with the softened
-     | highlights on the photo itself, the brightest cloud stays dark enough for white text at 6.2:1 and
-     | --color-muted at 5.2:1, measured against this photo at phone, tablet, desktop and wide crops.
+     | Reading surfaces: warm sage-white, lightly translucent over a soft blur, so a trace of the photo's colour
+     | comes through without disturbing text. Forms and dense records use the near-solid fill.
+     */
+    --sheet-fill: rgb(248 250 245 / 0.86);
+    --sheet-fill-solid: rgb(249 250 247 / 0.97);
+    --sheet-blur: 22px;
+
+    /*
+     | The dimming over the photo: dark green-charcoal, strongest across the sky where titles sit and lighter over
+     | the houses and lawn. The brightest cloud stays dark enough for white text at 5.7:1 and --color-muted at
+     | 4.8:1, simulated against this photo at phone, tablet, desktop and wide crops.
      */
     --backdrop-veil: linear-gradient(
         180deg,
         rgb(11 22 16 / 0.6) 0%,
-        rgb(11 22 16 / 0.52) 38%,
-        rgb(11 22 16 / 0.62) 70%,
-        rgb(11 22 16 / 0.76) 100%
+        rgb(11 22 16 / 0.5) 38%,
+        rgb(11 22 16 / 0.52) 70%,
+        rgb(11 22 16 / 0.6) 100%
     );
 
     /* Floating chrome on phones: room kept clear above and below the page content */
@@ -308,7 +323,7 @@
         height: 100%;
         object-fit: cover;
         object-position: 62% 40%;
-        filter: saturate(0.78) contrast(0.8) brightness(0.8) blur(2px);
+        filter: saturate(0.92) contrast(0.84) brightness(0.8) blur(2px);
         transform: scale(1.04);
     }
 
@@ -368,26 +383,27 @@
     }
 
     /*
-     | Glass surfaces: a tinted, blurred view of the photo behind, a faint reflection and a light rim. Text on glass is
-     | light, like text on the backdrop; the focus ring turns white.
+     | Glass surfaces: a lightly tinted, brightened and blurred view of the photo behind, a faint reflection, a fine
+     | light rim and soft depth. Text on glass is light, like text on the backdrop, with a soft shadow that keeps it
+     | steady over lighter and darker patches; the focus ring turns white.
      */
     .glass,
     .glass-thin,
     .glass-thick {
         --glass-fill: var(--glass-regular);
         --color-ink: #ffffff;
-        --color-muted: rgb(255 255 255 / 0.8);
+        --color-muted: rgb(255 255 255 / 0.88);
         --color-heading: #ffffff;
         --color-primary: #dcf2d6;
         --color-focus: #ffffff;
-        --color-line: rgb(255 255 255 / 0.16);
-        --color-line-strong: rgb(255 255 255 / 0.3);
+        --color-line: rgb(255 255 255 / 0.18);
+        --color-line-strong: rgb(255 255 255 / 0.32);
         background:
             var(--glass-sheen),
             linear-gradient(var(--glass-fill), var(--glass-fill));
         box-shadow: var(--glass-rim), var(--shadow-glass);
         color: var(--color-ink);
-        text-shadow: none;
+        text-shadow: 0 1px 2px rgb(6 14 9 / 0.28);
     }
 
     .glass-thin {
@@ -405,12 +421,16 @@
     }
 
     /*
-     | Menus open from inside glass bars, where a browser can't blur the page behind a second glass layer, so they
-     | are nearly opaque white with dark text.
+     | Menus open from inside glass bars, where a browser can't blur the page behind a second glass layer: even a
+     | 97% fill there lets the page show through sharply. So menus are opaque, in the cards' warm sage-white, with
+     | the glass rim and reflection and dark text.
      */
     .menu-panel {
-        background-color: rgb(255 255 255 / 0.97);
+        background:
+            var(--glass-sheen),
+            linear-gradient(#f9faf7, #f9faf7);
         box-shadow:
+            inset 0 1px 0 rgb(255 255 255 / 0.9),
             inset 0 0 0 1px rgb(22 32 26 / 0.08),
             var(--shadow-glass);
     }
@@ -424,8 +444,8 @@
     }
 
     /*
-     | The blur brightens a little, as clear glass gathers light. Measured in the browser over this backdrop at desktop
-     | and phone sizes, white text on glass stays at 9:1 or more and 80% white at 6.5:1 or more.
+     | The blur brightens what is behind it, as clear glass gathers light. Measured in the browser over this backdrop
+     | at desktop and phone sizes, white text on glass stays at 7:1 or more and 80% white at 5.2:1 or more.
      */
     @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
         .glass,
@@ -442,11 +462,6 @@
         .glass-thick {
             -webkit-backdrop-filter: blur(var(--glass-blur-thick)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness));
             backdrop-filter: blur(var(--glass-blur-thick)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness));
-        }
-
-        .menu-panel {
-            -webkit-backdrop-filter: blur(var(--glass-blur-thick)) saturate(var(--glass-saturate));
-            backdrop-filter: blur(var(--glass-blur-thick)) saturate(var(--glass-saturate));
         }
     }
 
@@ -536,6 +551,50 @@
     .status-pill:not(.glass-thin) {
         background-color: color-mix(in srgb, var(--color-ink) 6%, transparent);
         box-shadow: inset 0 0 0 1px var(--color-line);
+    }
+
+    /*
+     | The Overview's summary: a compact strip of figures on thin glass, divided by fine rules. From tablet width it is
+     | only as wide as its figures; on phones the figures share the width, and four of them sit two by two.
+     */
+    .stat-bar {
+        @apply flex overflow-hidden rounded-[1.25rem];
+    }
+
+    .stat-bar > div {
+        @apply flex min-w-0 flex-1 flex-col-reverse justify-end px-4 py-3;
+    }
+
+    .stat-bar > div + div {
+        border-left: 1px solid var(--color-line);
+    }
+
+    @media (width >= 40rem) {
+        .stat-bar {
+            width: fit-content;
+        }
+
+        .stat-bar > div {
+            @apply min-w-30 flex-none px-5;
+        }
+    }
+
+    @media (width < 40rem) {
+        .stat-bar-wrap {
+            flex-wrap: wrap;
+        }
+
+        .stat-bar-wrap > div {
+            flex-basis: 50%;
+        }
+
+        .stat-bar-wrap > div:nth-child(odd) {
+            border-left: 0;
+        }
+
+        .stat-bar-wrap > div:nth-child(n + 3) {
+            border-top: 1px solid var(--color-line);
+        }
     }
 
     /* Type: a large, tight title; everything else at reading sizes */
@@ -803,12 +862,62 @@
         background-size: 1.125rem;
     }
 
-    /* Reading surfaces: opaque white sheets on the backdrop, and a neutral photo well */
+    /*
+     | Reading surfaces: warm sage-white sheets that let a soft trace of the photo through, with a light top edge.
+     | Forms and dense records add .sheet-solid. Links and icons use the deeper green, which keeps 5.5:1 even where
+     | the darkest part of the backdrop shows through. Photo wells inside stay opaque and neutral.
+     */
     .sheet {
-        @apply rounded-sheet bg-surface;
+        @apply rounded-sheet;
+        --color-primary: var(--color-brand-strong);
+        --color-focus: var(--color-brand-strong);
+        background-color: var(--sheet-fill);
         box-shadow:
-            inset 0 0 0 1px rgb(22 32 26 / 0.05),
+            inset 0 1px 0 rgb(255 255 255 / 0.75),
+            inset 0 0 0 1px rgb(255 255 255 / 0.3),
+            0 0 0 1px rgb(22 32 26 / 0.05),
             var(--shadow-sheet);
+    }
+
+    .sheet-solid {
+        --sheet-fill: var(--sheet-fill-solid);
+    }
+
+    @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+        .sheet:not(.sheet-solid) {
+            -webkit-backdrop-filter: blur(var(--sheet-blur)) saturate(1.4);
+            backdrop-filter: blur(var(--sheet-blur)) saturate(1.4);
+        }
+    }
+
+    /* Without a blur to soften what shows through, reading surfaces close up to nearly opaque */
+    @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+        .sheet {
+            --sheet-fill: var(--sheet-fill-solid);
+        }
+    }
+
+    @media (prefers-reduced-transparency: reduce) {
+        .sheet:not(.sheet-solid) {
+            -webkit-backdrop-filter: none;
+            backdrop-filter: none;
+        }
+
+        .sheet {
+            --sheet-fill: #f9faf7;
+        }
+    }
+
+    @media (prefers-contrast: more) {
+        .sheet:not(.sheet-solid) {
+            -webkit-backdrop-filter: none;
+            backdrop-filter: none;
+        }
+
+        .sheet {
+            --sheet-fill: #ffffff;
+            box-shadow: 0 0 0 1px var(--color-control);
+        }
     }
 
     .board {
@@ -969,6 +1078,7 @@
     /* The thumb is solid white on clear glass, so its label switches back to dark text */
     .segmented-option:has(input:checked) {
         @apply bg-white text-[#18311f];
+        text-shadow: none;
         box-shadow:
             0 1px 2px rgb(6 16 10 / 0.14),
             0 6px 14px -8px rgb(6 16 10 / 0.45);
