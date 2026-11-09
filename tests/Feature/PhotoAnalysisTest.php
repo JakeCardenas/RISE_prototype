@@ -208,7 +208,7 @@ test('an analysis that is waiting is not requested twice', function () {
     Queue::assertNothingPushed();
     expect(PhotoAnalysis::count())->toBe(1);
     $this->get(route('records.analysis.show', $this->record))->assertSee('Analyzing photo…');
-    $this->getJson(route('records.analysis.status', $this->record))->assertExactJson(['status' => PhotoAnalysis::PENDING]);
+    $this->getJson(route('records.analysis.status', $this->record))->assertJson(['status' => PhotoAnalysis::PENDING, 'stage' => 'queued']);
 });
 
 test('other residents cannot see, request or check an analysis', function () {

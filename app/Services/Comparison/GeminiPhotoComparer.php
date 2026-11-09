@@ -6,6 +6,7 @@ use App\Services\Analysis\AnalysisFailed;
 use App\Services\Gemini\GeminiClient;
 use App\Services\Photos\ProcessedImage;
 use App\Support\CautiousText;
+use Closure;
 
 // Google Gemini compares two photos of one spot. It first says whether the photos can be compared at all; when they
 // can't, RISE lists no surface differences and explains why instead. See README.md for setup.
@@ -52,9 +53,9 @@ class GeminiPhotoComparer implements PhotoComparer
         return $this->client->maxImageSide();
     }
 
-    public function compare(ProcessedImage $earlier, ProcessedImage $later): ComparisonResult
+    public function compare(ProcessedImage $earlier, ProcessedImage $later, ?Closure $sent = null): ComparisonResult
     {
-        $answer = $this->client->answer([self::INSTRUCTIONS, 'Photo A (earlier):', $earlier, 'Photo B (later):', $later], self::schema());
+        $answer = $this->client->answer([self::INSTRUCTIONS, 'Photo A (earlier):', $earlier, 'Photo B (later):', $later], self::schema(), $sent);
         $data = $answer->data;
         $comparability = $data['comparability'] ?? null;
         $limitations = $data['comparison_limits'] ?? null;

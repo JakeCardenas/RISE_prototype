@@ -45,8 +45,10 @@ class AnalyzePhoto implements ShouldQueue
         $analysis->forceFill([
             'status' => PhotoAnalysis::PROCESSING,
             'started_at' => now(),
+            'sent_at' => null,
             'attempts' => $analysis->attempts + 1,
         ])->save();
+        $started = microtime(true);
 
         try {
             $record = $analysis->photoRecord;
@@ -55,7 +57,11 @@ class AnalyzePhoto implements ShouldQueue
             $bytes = Storage::disk($record->image_disk)->get($record->display_path ?? $record->image_path)
                 ?? throw new AnalysisFailed('photo_missing');
 
-            $result = $detector->detect($photos->analysisCopy($bytes, $detector->maxImageSide()));
+            // The waiting page shows "waiting for the result" once the photo has been fully sent
+            $result = $detector->detect(
+                $photos->analysisCopy($bytes, $detector->maxImageSide()),
+                fn () => $analysis->forceFill(['sent_at' => now()])->save(),
+            );
 
             $analysis->forceFill([
                 'status' => PhotoAnalysis::COMPLETED,
@@ -71,8 +77,10 @@ class AnalyzePhoto implements ShouldQueue
                 'provider_request_id' => $result->requestId,
                 'completed_at' => now(),
             ])->save();
+            $this->report('info', $analysis, $started);
         } catch (AnalysisFailed $e) {
             $this->fail($analysis, $e->errorCode);
+            $this->report('warning', $analysis, $started, $e->httpStatus);
         } catch (Throwable $e) {
             // Only the exception type is logged; messages can contain provider URLs and keys
             Log::warning('RISE photo analysis failed unexpectedly.', ['analysis' => $analysis->id, 'exception' => $e::class]);
@@ -84,6 +92,22 @@ class AnalyzePhoto implements ShouldQueue
     public function failed(?Throwable $exception): void
     {
         $this->fail($this->analysis, 'worker_timeout');
+        $this->report('warning', $this->analysis, null);
+    }
+
+    // Safe operator diagnostics only: provider, model, outcome, duration and HTTP status; never keys, headers, photos
+    // or anything the provider sent back
+    private function report(string $level, PhotoAnalysis $analysis, ?float $started, ?int $httpStatus = null): void
+    {
+        Log::log($level, 'RISE photo analysis '.($analysis->status === PhotoAnalysis::COMPLETED ? 'completed.' : 'failed.'), array_filter([
+            'analysis' => $analysis->id,
+            'provider' => $analysis->provider,
+            'model' => $analysis->model_id,
+            'error_code' => $analysis->error_code,
+            'http_status' => $httpStatus,
+            'duration_ms' => $started ? (int) round((microtime(true) - $started) * 1000) : null,
+            'sent' => $analysis->sent_at !== null,
+        ], fn ($value) => $value !== null));
     }
 
     private function fail(PhotoAnalysis $analysis, string $errorCode): void

@@ -14,7 +14,9 @@
     $written = $status === PhotoAnalysis::COMPLETED && isset($analysis->result['observation']);
     $provider = $analysis?->provider ?? $detector->name();
     $providerName = AnalysisProviders::label($provider);
-    $stillWaiting = $analysis?->isWaiting() && $analysis->requested_at->lt(now()->subMinutes(2));
+    $stillWaiting = $analysis?->status === PhotoAnalysis::PENDING && $analysis->requested_at->lt(now()->subMinutes(2));
+    // While a request runs or after it fails, phones show its status before the photo, so it's never below the fold
+    $statusFirst = $analysis?->isWaiting() || $status === PhotoAnalysis::FAILED;
     $nextActions = [
         'retake_photo' => [route('records.create', ['point' => $point]), 'Take another photo', 'camera'],
         'compare_with_baseline' => $isBaseline ? null : [route('points.compare', [$point, 'second' => $record->id]), 'Compare with baseline', 'columns'],
@@ -89,7 +91,7 @@
         </section>
 
         {{-- One block per state, all with the same order: what is happening, then what you can do --}}
-        <section aria-labelledby="result-heading" class="min-w-0 space-y-6">
+        <section aria-labelledby="result-heading" @class(['min-w-0 space-y-6', 'max-lg:order-first' => $statusFirst])>
             @if (! $analysis || $status === PhotoAnalysis::NOT_CONFIGURED)
                 <div class="sheet sheet-solid p-5 sm:p-7">
                     @if ($detector->isConfigured())
@@ -142,7 +144,7 @@
                             </div>
                         </dl>
 
-                        <form method="POST" action="{{ route('records.analysis.store', $record) }}" class="mt-6">
+                        <form method="POST" action="{{ route('records.analysis.store', $record) }}" class="mt-6" data-submit-once>
                             @csrf
                             <button type="submit" class="btn btn-primary w-full sm:w-auto"><x-icon name="scan" /> Analyze with AI</button>
                         </form>
@@ -156,35 +158,17 @@
                     @endif
                 </div>
             @elseif ($analysis->isWaiting())
-                <div class="sheet sheet-solid p-5 sm:p-7" data-analysis-waiting data-status-url="{{ route('records.analysis.status', $record) }}">
-                    <h2 id="result-heading" class="flex items-center gap-2.5 section-title" role="status">
-                        <x-icon name="clock" class="text-primary" /> Analyzing photo…
-                    </h2>
-                    <ol class="mt-5 space-y-3 border-l border-line-strong pl-4 text-sm">
-                        <li class="flex flex-wrap items-center gap-x-2.5 gap-y-0.5">
-                            <x-icon name="check-circle" class="size-4 text-success" /> Request received
-                            <x-local-time :time="$analysis->requested_at" class="meta" />
-                        </li>
-                        <li class="flex items-center gap-2.5 font-medium">
-                            <x-icon name="clock" class="size-4 text-primary" />
-                            {{ $state === 'processing' ? 'Sent to '.$providerName.', waiting for the result' : 'Waiting for the analysis queue to pick it up' }}
-                        </li>
-                    </ol>
-                    <p class="mt-5 text-sm text-muted">This usually takes under a minute. You can leave this page; the result will be saved here.</p>
-                    <p class="mt-3 text-sm" data-still-waiting @unless ($stillWaiting) hidden @endunless>
-                        Still waiting. The analysis queue may not be running; the person who runs RISE can start it with <code class="rounded bg-well px-1 py-0.5 text-[0.8125rem]">php artisan queue:work</code>.
-                    </p>
-                </div>
+                <x-ai-progress class="sheet sheet-solid p-5 sm:p-7" heading-id="result-heading"
+                    :status-url="route('records.analysis.status', $record)" :stage="$analysis->stage()" :elapsed="$analysis->elapsedSeconds()"
+                    :provider="$providerName" :requested-at="$analysis->requested_at" :still-waiting="$stillWaiting" />
             @elseif ($status === PhotoAnalysis::FAILED)
                 <div class="surface rounded-sheet border border-danger-line bg-danger-tint p-5 sm:p-7">
                     <h2 id="result-heading" class="flex items-center gap-2.5 text-[1.1875rem] font-semibold tracking-[-0.015em] text-danger">
                         <x-icon name="alert-circle" /> The analysis didn’t finish
                     </h2>
-                    <p class="mt-1.5 text-sm font-semibold text-muted">
-                        {{ ['timed_out' => 'Timed out', 'retryable' => 'Can be tried again later', 'failed' => 'Needs a settings change'][$state] }}
-                    </p>
+                    <p class="mt-1.5 text-sm font-semibold text-muted">{{ $analysis->failureTitle() }}</p>
                     <p class="mt-3">{{ $analysis->failureMessage() }} Your photo is still saved.</p>
-                    <form method="POST" action="{{ route('records.analysis.store', $record) }}" class="mt-6">
+                    <form method="POST" action="{{ route('records.analysis.store', $record) }}" class="mt-6" data-submit-once>
                         @csrf
                         <button type="submit" @class(['btn', 'btn-primary' => $state !== 'failed', 'btn-secondary' => $state === 'failed'])><x-icon name="refresh" /> Try again</button>
                     </form>
@@ -200,7 +184,7 @@
                 <div class="sheet sheet-solid p-5 sm:p-7">
                     <h2 id="result-heading" class="section-title">This result can’t be shown</h2>
                     <p class="mt-3">RISE couldn’t check the stored result, so it isn’t shown. You can ask for a new analysis.</p>
-                    <form method="POST" action="{{ route('records.analysis.store', $record) }}" class="mt-5">
+                    <form method="POST" action="{{ route('records.analysis.store', $record) }}" class="mt-5" data-submit-once>
                         @csrf
                         <button type="submit" class="btn btn-secondary"><x-icon name="refresh" /> Try again</button>
                     </form>

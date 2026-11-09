@@ -3,8 +3,11 @@
 namespace App\Services\Comparison;
 
 use App\Services\Analysis\AnalysisFailed;
+use App\Services\Analysis\ConnectionFailure;
+use App\Services\Analysis\ReportsWhenSent;
 use App\Services\Photos\ProcessedImage;
 use App\Support\CautiousText;
+use Closure;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
@@ -16,6 +19,8 @@ use Throwable;
 // never notes, spot names or account details. See README.md for setup.
 class OpenAiCompatiblePhotoComparer implements PhotoComparer
 {
+    use ReportsWhenSent;
+
     private const MAX_ITEMS = 3;
 
     private const MAX_LENGTH = 200;
@@ -56,7 +61,7 @@ class OpenAiCompatiblePhotoComparer implements PhotoComparer
         return (int) ($this->config['max_image_side'] ?? 1024);
     }
 
-    public function compare(ProcessedImage $earlier, ProcessedImage $later): ComparisonResult
+    public function compare(ProcessedImage $earlier, ProcessedImage $later, ?Closure $sent = null): ComparisonResult
     {
         $image = fn (ProcessedImage $photo) => ['type' => 'image_url', 'image_url' => ['url' => 'data:image/jpeg;base64,'.base64_encode($photo->bytes)]];
 
@@ -66,6 +71,7 @@ class OpenAiCompatiblePhotoComparer implements PhotoComparer
                 ->connectTimeout(10)
                 ->acceptJson()
                 ->when(filled($this->config['api_key'] ?? null), fn ($request) => $request->withToken($this->config['api_key']))
+                ->withOptions($this->whenSent($sent))
                 // Up to three attempts, only for rate limits, server errors and dropped connections
                 ->retry([1000, 3000], when: fn (Throwable $e) => $this->isRetryable($e), throw: false)
                 ->post('/chat/completions', [
@@ -84,11 +90,11 @@ class OpenAiCompatiblePhotoComparer implements PhotoComparer
                 ]);
         } catch (ConnectionException $e) {
             // The exception text can include the endpoint and key, so only a code is kept
-            throw new AnalysisFailed(Str::contains($e->getMessage(), ['timed out', 'Timeout'], true) ? 'provider_timeout' : 'provider_unreachable');
+            throw new AnalysisFailed(ConnectionFailure::code($e));
         }
 
         if ($response->failed()) {
-            throw new AnalysisFailed($this->errorCodeFor($response->status()));
+            throw new AnalysisFailed($this->errorCodeFor($response->status()), $response->status());
         }
 
         $content = data_get($response->json(), 'choices.0.message.content');

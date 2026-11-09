@@ -6,6 +6,7 @@ use App\Jobs\AnalyzePhoto;
 use App\Models\PhotoAnalysis;
 use App\Models\PhotoRecord;
 use App\Services\Analysis\CrackDetector;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
 
 class PhotoAnalysisController extends Controller
@@ -30,17 +31,25 @@ class PhotoAnalysisController extends Controller
     {
         Gate::authorize('analyze', $record);
 
-        $latest = $record->latestAnalysis;
+        // One request per photo at a time, so a double click can't start two analyses or two provider charges
+        Cache::lock('rise-analysis-request:'.$record->id, 10)->get(fn () => $this->request($record));
+
+        return redirect()->route('records.analysis.show', $record);
+    }
+
+    private function request(PhotoRecord $record): void
+    {
+        $latest = $record->latestAnalysis()->first();
 
         if ($latest && ! $latest->canRetry()) {
-            return redirect()->route('records.analysis.show', $record);
+            return;
         }
 
         $configured = $this->detector->isConfigured();
 
         // Asking again while nothing is set up changes nothing, so no further record is added
         if (! $configured && $latest?->status === PhotoAnalysis::NOT_CONFIGURED) {
-            return redirect()->route('records.analysis.show', $record);
+            return;
         }
 
         $analysis = (new PhotoAnalysis)->forceFill([
@@ -58,15 +67,19 @@ class PhotoAnalysisController extends Controller
         if ($configured) {
             AnalyzePhoto::dispatch($analysis);
         }
-
-        return redirect()->route('records.analysis.show', $record);
     }
 
-    // READ — a small status check for the waiting page
+    // READ — a small status check for the waiting page: the status, the real stage, and seconds since the request
     public function status(PhotoRecord $record)
     {
         Gate::authorize('view', $record);
 
-        return response()->json(['status' => $record->latestAnalysis?->status]);
+        $analysis = $record->latestAnalysis;
+
+        return response()->json([
+            'status' => $analysis?->status,
+            'stage' => $analysis?->stage(),
+            'elapsed' => $analysis?->elapsedSeconds(),
+        ])->header('Cache-Control', 'no-store');
     }
 }

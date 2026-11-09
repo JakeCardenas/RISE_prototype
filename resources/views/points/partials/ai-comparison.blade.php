@@ -17,13 +17,10 @@
             AI comparison isn’t set up on this RISE server, so nothing is sent anywhere. The person who runs RISE can turn it on; see the README.
         </p>
     @elseif ($aiComparison?->isWaiting())
-        <div class="mt-3" data-analysis-waiting data-status-url="{{ route('ai-comparisons.status', $aiComparison) }}">
-            <p class="flex items-center gap-2.5 font-semibold" role="status"><x-icon name="clock" class="text-primary" /> Comparing the two photos…</p>
-            <p class="mt-1 text-sm text-muted">This usually takes under a minute. You can leave this page.</p>
-            <p class="mt-2 text-sm" data-still-waiting hidden>
-                Still waiting. The queue may not be running; the person who runs RISE can start it with <code class="rounded bg-well px-1 py-0.5 text-[0.8125rem]">php artisan queue:work</code>.
-            </p>
-        </div>
+        <x-ai-progress class="mt-4" heading="Comparing the two photos…" :level="3" subject="the photos"
+            :status-url="route('ai-comparisons.status', $aiComparison)" :stage="$aiComparison->stage()" :elapsed="$aiComparison->elapsedSeconds()"
+            :provider="$aiComparison->provider" :requested-at="$aiComparison->requested_at"
+            :still-waiting="$aiComparison->status === \App\Models\PhotoComparison::PENDING && $aiComparison->requested_at->lt(now()->subMinutes(2))" />
     @elseif ($aiComparison?->status === PhotoComparison::COMPLETED)
         @php($comparability = $aiComparison->comparability())
         <p class="meta mt-1">
@@ -151,7 +148,7 @@
             </div>
         </dl>
 
-        <form method="POST" action="{{ route('points.ai-comparisons.store', $point) }}" class="mt-5">
+        <form method="POST" action="{{ route('points.ai-comparisons.store', $point) }}" class="mt-5" data-submit-once>
             @csrf
             <input type="hidden" name="earlier" value="{{ $earlier->id }}">
             <input type="hidden" name="later" value="{{ $later->id }}">

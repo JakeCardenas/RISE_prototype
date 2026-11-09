@@ -1211,6 +1211,72 @@
         opacity: var(--overlay);
     }
 
+    /* An AI request in progress: the spinner and the bar show that work is going on (never a made-up percentage);
+       the steps show the real stage the server reports */
+    .ai-spinner {
+        @apply inline-block size-6 shrink-0 rounded-full;
+        border: 3px solid color-mix(in srgb, var(--color-primary) 20%, transparent);
+        border-top-color: var(--color-primary);
+        animation: ai-spin 0.9s linear infinite;
+    }
+
+    .ai-spinner-sm {
+        @apply size-4;
+        border-width: 2px;
+    }
+
+    /* Inside a button the spinner takes the button's text colour */
+    .btn .ai-spinner {
+        border-color: color-mix(in srgb, currentColor 30%, transparent);
+        border-top-color: currentColor;
+    }
+
+    .btn[aria-busy='true'] {
+        cursor: progress;
+    }
+
+    .ai-bar {
+        @apply relative h-1.5 overflow-hidden rounded-full;
+        background: color-mix(in srgb, var(--color-primary) 16%, transparent);
+    }
+
+    .ai-bar::before {
+        @apply absolute inset-y-0 left-0 w-2/5 rounded-full;
+        content: '';
+        background: var(--color-primary);
+        animation: ai-indeterminate 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    }
+
+    .ai-steps {
+        @apply space-y-3 text-sm;
+    }
+
+    .ai-steps > li {
+        @apply flex items-center gap-2.5 text-muted;
+    }
+
+    .ai-steps > li:is([data-step-state='done'], [data-step-state='current']) {
+        @apply text-ink;
+    }
+
+    .ai-steps > li[data-step-state='current'] {
+        @apply font-semibold;
+    }
+
+    .ai-step-mark {
+        @apply flex size-5 shrink-0 items-center justify-center;
+    }
+
+    .ai-step-mark > * {
+        display: none;
+    }
+
+    [data-step-state='done'] > .ai-step-mark > .is-done,
+    [data-step-state='current'] > .ai-step-mark > .is-current,
+    [data-step-state='todo'] > .ai-step-mark > .is-todo {
+        display: block;
+    }
+
     /* Provenance laid out like the title block of a drawing sheet */
     .title-block {
         @apply grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-line bg-line;
@@ -1324,6 +1390,35 @@
 @keyframes rise-fade {
     from {
         opacity: 0;
+    }
+}
+
+@keyframes ai-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes ai-indeterminate {
+    from {
+        transform: translateX(-100%);
+    }
+
+    to {
+        transform: translateX(260%);
+    }
+}
+
+/* With reduced motion the progress view holds still: a steady ring, a full pale bar, and the steps and clock in words */
+@media (prefers-reduced-motion: reduce) {
+    .ai-spinner {
+        animation: none;
+    }
+
+    .ai-bar::before {
+        width: 100%;
+        opacity: 0.45;
+        animation: none;
     }
 }
 

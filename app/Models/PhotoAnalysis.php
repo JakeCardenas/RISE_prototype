@@ -22,7 +22,8 @@ class PhotoAnalysis extends Model
     public const FAILED = 'failed';
     public const NOT_CONFIGURED = 'not_configured';
 
-    // Failures that can clear up by themselves, so trying again later can help
+    // Failures that can clear up by themselves, so trying again later can help; the rest need a settings change or
+    // a different photo
     private const TRANSIENT_ERRORS = ['rate_limited', 'provider_unavailable', 'provider_unreachable', 'provider_timeout', 'worker_timeout', 'invalid_response', 'unexpected_error'];
 
     // Every field is set by the server; nothing comes from user input
@@ -37,6 +38,7 @@ class PhotoAnalysis extends Model
             'attempts' => 'integer',
             'requested_at' => 'datetime',
             'started_at' => 'datetime',
+            'sent_at' => 'datetime',
             'completed_at' => 'datetime',
         ];
     }
@@ -65,6 +67,22 @@ class PhotoAnalysis extends Model
     public function canRetry(): bool
     {
         return in_array($this->status, [self::FAILED, self::NOT_CONFIGURED], true);
+    }
+
+    // Where a waiting request is: in RISE's queue, being sent to the provider, or sent and waiting for its answer
+    public function stage(): string
+    {
+        return match ($this->status) {
+            self::PENDING => 'queued',
+            self::PROCESSING => $this->sent_at ? 'waiting' : 'sending',
+            default => $this->status,
+        };
+    }
+
+    // Seconds since the request, by the server's clock
+    public function elapsedSeconds(): int
+    {
+        return max(0, (int) $this->requested_at->diffInSeconds(now()));
     }
 
     // unconfigured, queued, processing, completed, timed_out, retryable (may work later) or failed (needs a settings change)
@@ -105,20 +123,48 @@ class PhotoAnalysis extends Model
         return $this->result['regions'] ?? [];
     }
 
-    // What the resident can do next, by safe error code
+    // What happened, in a few words, under the failure heading
+    public function failureTitle(): string
+    {
+        $provider = $this->providerLabel();
+
+        return match ($this->error_code) {
+            'provider_timeout' => "No answer from {$provider} in time",
+            'provider_unreachable' => "Couldn’t connect to {$provider}",
+            'provider_unavailable' => "{$provider} had a temporary problem",
+            'rate_limited' => "{$provider} is busy",
+            'provider_quota' => 'Usage limit reached',
+            'invalid_credentials' => 'API key not accepted',
+            'model_not_found' => 'AI model not found',
+            'invalid_request' => 'Request not accepted',
+            'unsupported_image', 'image_too_large' => 'Photo couldn’t be read',
+            'invalid_response' => 'Result couldn’t be checked',
+            'worker_timeout' => 'The RISE queue stopped the job',
+            'photo_missing' => 'Photo file missing',
+            default => 'Something went wrong',
+        };
+    }
+
+    // What happened and what the resident can do next, by safe error code; settings are named in the logs, not here
     public function failureMessage(): string
     {
+        $provider = $this->providerLabel();
+        $seconds = (int) config($this->provider === 'gemini' ? 'services.gemini.timeout' : 'services.roboflow.timeout');
+
         return match ($this->error_code) {
-            'invalid_credentials' => 'The analysis provider didn’t accept RISE’s credentials. The person who runs RISE needs to check the API key.',
-            'model_not_found' => 'The configured model couldn’t be found. The person who runs RISE needs to check the model ID.',
-            'provider_quota' => 'The analysis provider’s usage limit has been reached. The person who runs RISE needs to check the account.',
-            'rate_limited' => 'The analysis provider is busy right now. Try again in a few minutes.',
-            'provider_unavailable', 'provider_unreachable', 'provider_timeout', 'worker_timeout' => 'The analysis provider couldn’t be reached or didn’t answer in time. Try again later.',
-            'unsupported_image', 'image_too_large' => 'The provider couldn’t analyse this photo. Try again, or analyse a different photo of this spot.',
-            'invalid_response' => 'The provider sent back a result RISE couldn’t read or check, so none is shown. Try again later.',
-            'invalid_request' => 'The analysis provider didn’t accept the request. The person who runs RISE needs to check its settings, such as the model ID.',
+            'provider_timeout' => "{$provider} didn’t finish in time (RISE waits up to {$seconds} seconds), so the photo wasn’t analysed. Try again later.",
+            'provider_unreachable' => "This RISE server couldn’t connect to {$provider}, so the photo wasn’t analysed. Try again later.",
+            'provider_unavailable' => "{$provider} reported a temporary problem. Try again in a few minutes.",
+            'rate_limited' => "{$provider} is handling too many requests right now. Try again in a few minutes.",
+            'provider_quota' => "This server’s {$provider} account has reached its usage limit. The person who runs RISE needs to check the account; trying again won’t help until then.",
+            'invalid_credentials' => "{$provider} didn’t accept this server’s API key. The person who runs RISE needs to check the key.",
+            'model_not_found' => "{$provider} couldn’t find the AI model this server is set to use. The person who runs RISE needs to check the model name.",
+            'invalid_request' => "{$provider} didn’t accept the request’s settings. The person who runs RISE needs to check them.",
+            'unsupported_image', 'image_too_large' => "{$provider} couldn’t read this photo. Try analysing a different photo of this spot.",
+            'invalid_response' => "{$provider} sent back a result RISE couldn’t check, so none is shown. Try again later.",
+            'worker_timeout' => 'The RISE queue didn’t finish this job in time. Try again; if it keeps happening, the person who runs RISE should check the queue worker.',
             'photo_missing' => 'This photo’s file couldn’t be found, so nothing was sent.',
-            default => 'Something went wrong while analysing this photo. Try again.',
+            default => 'Something went wrong on this server while analysing the photo. Try again.',
         };
     }
 }

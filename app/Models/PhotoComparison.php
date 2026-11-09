@@ -27,6 +27,7 @@ class PhotoComparison extends Model
             'attempts' => 'integer',
             'requested_at' => 'datetime',
             'started_at' => 'datetime',
+            'sent_at' => 'datetime',
             'completed_at' => 'datetime',
             'dismissed_at' => 'datetime',
         ];
@@ -61,6 +62,22 @@ class PhotoComparison extends Model
     public function isWaiting(): bool
     {
         return in_array($this->status, [self::PENDING, self::PROCESSING], true);
+    }
+
+    // Where a waiting request is: in RISE's queue, being sent to the provider, or sent and waiting for its answer
+    public function stage(): string
+    {
+        return match ($this->status) {
+            self::PENDING => 'queued',
+            self::PROCESSING => $this->sent_at ? 'waiting' : 'sending',
+            default => $this->status,
+        };
+    }
+
+    // Seconds since the request, by the server's clock
+    public function elapsedSeconds(): int
+    {
+        return max(0, (int) $this->requested_at->diffInSeconds(now()));
     }
 
     /** @return list<string> */
@@ -107,9 +124,15 @@ class PhotoComparison extends Model
     public function failureMessage(): string
     {
         return match ($this->error_code) {
-            'invalid_credentials', 'model_not_found', 'provider_quota' => 'The AI service didn’t accept the request. The person who runs RISE needs to check its settings.',
+            'invalid_credentials' => 'The AI service didn’t accept this server’s API key. The person who runs RISE needs to check the key.',
+            'model_not_found' => 'The AI service couldn’t find the model this server is set to use. The person who runs RISE needs to check the model name.',
+            'provider_quota' => 'This server’s AI account has reached its usage limit. The person who runs RISE needs to check the account.',
             'rate_limited' => 'The AI service is busy. Try again in a few minutes.',
-            'provider_unavailable', 'provider_unreachable', 'provider_timeout', 'worker_timeout' => 'The AI service couldn’t be reached or didn’t answer in time. Try again later.',
+            'provider_timeout' => 'The AI service didn’t answer in time, so RISE stopped waiting. Try again later.',
+            'provider_unreachable' => 'This RISE server couldn’t connect to the AI service. Try again later.',
+            'worker_timeout' => 'The RISE queue didn’t finish this job in time. Try again later.',
+            'unsupported_image', 'image_too_large' => 'The AI service couldn’t read one of these photos. Try comparing other photos of this spot.',
+            'provider_unavailable' => 'The AI service couldn’t be reached or didn’t answer in time. Try again later.',
             'photo_missing' => 'One of these photos couldn’t be found, so nothing was sent.',
             'invalid_request' => 'The AI service didn’t accept the request. The person who runs RISE needs to check its settings.',
             'invalid_response' => 'The AI service sent back something RISE couldn’t read. Try again later.',

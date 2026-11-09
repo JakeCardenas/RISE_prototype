@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Jobs\ComparePhotos;
 use App\Models\MonitoringPoint;
 use App\Models\PhotoComparison;
+use App\Models\PhotoRecord;
 use App\Services\Comparison\PhotoComparer;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
 
 // The optional AI comparison of two photos of one spot. Nothing is sent before the resident asks, and the result is
@@ -37,6 +39,14 @@ class PhotoComparisonController extends Controller
             return redirect($back)->with('info', 'AI comparison isn’t set up on this RISE server, so nothing was sent.');
         }
 
+        // One request per pair at a time, so a double click can't start two comparisons or two provider charges
+        Cache::lock('rise-comparison-request:'.$earlier->id.':'.$later->id, 10)->get(fn () => $this->request($point, $earlier, $later));
+
+        return redirect($back);
+    }
+
+    private function request(MonitoringPoint $point, PhotoRecord $earlier, PhotoRecord $later): void
+    {
         $waiting = PhotoComparison::query()
             ->where('earlier_record_id', $earlier->id)->where('later_record_id', $later->id)
             ->whereIn('status', [PhotoComparison::PENDING, PhotoComparison::PROCESSING])
@@ -57,16 +67,18 @@ class PhotoComparisonController extends Controller
 
             ComparePhotos::dispatch($comparison);
         }
-
-        return redirect($back);
     }
 
-    // READ — a small status check for the waiting panel
+    // READ — a small status check for the waiting panel: the status, the real stage, and seconds since the request
     public function status(PhotoComparison $comparison)
     {
         Gate::authorize('view', $comparison);
 
-        return response()->json(['status' => $comparison->status]);
+        return response()->json([
+            'status' => $comparison->status,
+            'stage' => $comparison->stage(),
+            'elapsed' => $comparison->elapsedSeconds(),
+        ])->header('Cache-Control', 'no-store');
     }
 
     // UPDATE — hide the result; the photos and the resident's notes are unchanged, and it can be run again

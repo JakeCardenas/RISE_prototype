@@ -85,7 +85,7 @@ Gemini once its key and model are set, and Roboflow otherwise.
    | Variable | Purpose | Default |
    |---|---|---|
    | `GEMINI_API_KEY` | Private API key | — (required) |
-   | `GEMINI_MODEL` | Model ID, for example the one Google's image-understanding guide uses | — (required) |
+   | `GEMINI_MODEL` | A current model ID that answers your key (check with `php artisan rise:ai-check --ping`) | — (required) |
    | `GEMINI_API_URL` | API base, ending before `/interactions` | `https://generativelanguage.googleapis.com/v1beta` |
    | `GEMINI_API_REVISION` | `Api-Revision` header that pins the request and response shape | `2026-05-20` |
    | `GEMINI_THINKING_LEVEL` | Optional `generation_config.thinking_level`, such as `minimal` or `low`, for faster answers | — (not sent) |
@@ -94,13 +94,21 @@ Gemini once its key and model are set, and Roboflow otherwise.
 
 3. Run `php artisan config:clear` if config is cached, and restart the queue worker. The same key also turns on the
    two-photo comparison (below) unless `RISE_COMPARISON_DRIVER` says otherwise.
+4. Run `php artisan rise:ai-check --ping`. It shows the setup without any secret, names any missing setting, checks
+   the time limits, and asks the model for a one-word text reply (no photo) to confirm it answers.
+
+On 9 November 2026, with this project's key, `gemini-3.8-flash` (listed as new on Google's models page) gave no answer
+at all within 30, 40, 60 or 90 seconds, even to a one-word text prompt, so every photo analysis timed out.
+`gemini-3.6-flash` (listed as stable) answered the same Interactions request in under 2 seconds, and RISE's full photo
+and comparison requests in 6 to 8 seconds, using generated test images. Model availability changes, so check with
+`--ping` rather than relying on this note.
 
 RISE calls Google's Interactions API, `POST {GEMINI_API_URL}/interactions` with the key in the `x-goog-api-key`
 header, following Google's image-understanding and structured-output guides (checked 8 November 2026). The body holds
 the model, RISE's fixed instructions, the photo as inline base64 JPEG (`type: image`), a `response_format` with a JSON
 schema (`mime_type: application/json`) and `store: false`. The reply's last `model_output` step must be JSON that
-follows the schema. No live request was made while building this: it was verified against a local mock that returns
-documented response shapes, so check one real request when you first set a key.
+follows the schema. This request was first checked against a local mock, then against the live API on 9 November 2026
+with generated, non-personal test images (never a resident's photo).
 
 ### What Gemini receives, and what RISE can and can't promise
 
@@ -139,8 +147,51 @@ Whatever a model returns, RISE stores only what passes its own checks (`App\Serv
 
 Results move through these states: not set up, queued, processing, completed, timed out, failed but worth trying
 again, and failed until a setting changes. Each analysis row records the provider, the requested model ID, the model
-version the provider reports, its request ID, the request and completion times and the status. Earlier Roboflow
-results keep working and are shown as before.
+version the provider reports, its request ID, the request, sending and completion times and the status. Earlier
+Roboflow results keep working and are shown as before.
+
+### What residents see while it runs
+
+The waiting panel (`x-ai-progress`, kept live by `resources/js/rise/analysis-status.js`) shows the real stage from the
+server: waiting for the RISE queue, sending the photo to the provider (until the request, photo included, has been
+fully sent, as recorded in `sent_at`), then waiting for the provider's result. It has a spinner, an indeterminate bar
+(never a percentage), the time since the request, and a note that the resident can leave and come back. On phones the
+panel comes before the photo, and the photo stays visible and uncropped. With reduced motion the spinner and bar hold
+still. Stage changes are announced to screen readers; the clock isn't.
+
+- The page checks the status every 2 seconds at first, then less often, and pauses while the tab is hidden. If a check
+  fails, it says the status couldn't be refreshed and keeps trying with a back-off, with a Check now button; it never
+  reports that the analysis itself failed. When the request finishes or fails, the page reloads and moves focus to
+  the result.
+- The Analyze and Try again buttons send once and show "Sending request…". The server also holds a short lock per
+  photo (and per photo pair for comparisons), so simultaneous requests start one analysis and one provider charge.
+- A request still in the queue after two minutes adds a hint that the queue worker may not be running.
+
+### When an analysis doesn't finish
+
+Start with `php artisan rise:ai-check --ping`. Each failure keeps a safe error code, and each finished or failed
+request writes one log line ("RISE photo analysis completed." or "… failed.") with only the provider, model, error
+code, HTTP status, duration in milliseconds and whether the photo had been sent; never the key, headers, the photo or
+anything the provider sent back.
+
+| Error code | What happened | What to check |
+|---|---|---|
+| `provider_timeout` | The provider didn't finish within `GEMINI_TIMEOUT` (or sent 504) | Whether the model answers at all (`--ping`); try another current model |
+| `provider_unreachable` | The server couldn't connect | The server's internet connection and `GEMINI_API_URL` |
+| `invalid_credentials` | The key was refused | `GEMINI_API_KEY` |
+| `model_not_found` | The model doesn't exist for this key | `GEMINI_MODEL` |
+| `invalid_request` | The request's settings were refused | `GEMINI_API_REVISION`, `GEMINI_THINKING_LEVEL` |
+| `unsupported_image`, `image_too_large` | The photo couldn't be read | Try another photo; lower `GEMINI_MAX_IMAGE_SIDE` |
+| `rate_limited` | Per-minute limit; retried twice, then given up | Wait a few minutes |
+| `provider_quota` | Daily quota used up; not retried | The project's quota or billing in Google AI Studio |
+| `provider_unavailable` | Temporary server error (500–503); retried twice | Try again later |
+| `invalid_response` | An answer RISE couldn't check against its schema | Try again; check the model |
+| `worker_timeout` | The queue worker stopped the job (75 s limit) | The worker (`composer run dev` or `php artisan queue:work`) |
+
+The time limits nest so that each layer gives up before the one around it: a Gemini request has `GEMINI_TIMEOUT` (45 s;
+a slow attempt is never repeated, so with retries the longest call is about 63 s), the job has 75 s, and the database
+queue retries a job only after 90 s (`retry_after`). Raising `GEMINI_TIMEOUT` doesn't help a model that never answers,
+and at 57 s or more it would break this chain; `rise:ai-check` warns when it does.
 
 Residents can also rate a finished result as useful, incorrect or not sure, with an optional note of their own.
 Ratings are stored apart from the model's wording and from photo notes (`ai_feedback`), are never sent to a provider

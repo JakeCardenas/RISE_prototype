@@ -3,6 +3,7 @@
 namespace App\Services\Analysis;
 
 use App\Services\Photos\ProcessedImage;
+use Closure;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
@@ -13,6 +14,8 @@ use Throwable;
 // See README.md for setup and the documented request and response shape.
 class RoboflowCrackDetector implements CrackDetector
 {
+    use ReportsWhenSent;
+
     private const MAX_REGIONS = 100;
 
     private const MAX_POINTS = 400;
@@ -42,12 +45,20 @@ class RoboflowCrackDetector implements CrackDetector
             && preg_match('#^[A-Za-z0-9._-]+/\d+$#', (string) $this->modelId()) === 1;
     }
 
+    public function missingSettings(): array
+    {
+        return array_keys(array_filter([
+            'ROBOFLOW_API_KEY' => blank($this->config['api_key'] ?? null),
+            'ROBOFLOW_MODEL_ID' => preg_match('#^[A-Za-z0-9._-]+/\d+$#', (string) $this->modelId()) !== 1,
+        ]));
+    }
+
     public function maxImageSide(): int
     {
         return (int) ($this->config['max_image_side'] ?? 1280);
     }
 
-    public function detect(ProcessedImage $image): DetectionResult
+    public function detect(ProcessedImage $image, ?Closure $sent = null): DetectionResult
     {
         try {
             $response = Http::baseUrl(rtrim((string) $this->config['api_url'], '/'))
@@ -62,16 +73,17 @@ class RoboflowCrackDetector implements CrackDetector
                     'disable_active_learning' => 'true',
                 ])
                 ->withBody(base64_encode($image->bytes), 'application/x-www-form-urlencoded')
+                ->withOptions($this->whenSent($sent))
                 // Up to three attempts, only for rate limits, server errors and dropped connections
                 ->retry([1000, 3000], when: fn (Throwable $e) => $this->isRetryable($e), throw: false)
                 ->post('/'.$this->modelId());
         } catch (ConnectionException $e) {
             // The exception text includes the request URL and key, so only a code is kept
-            throw new AnalysisFailed(Str::contains($e->getMessage(), ['timed out', 'Timeout'], true) ? 'provider_timeout' : 'provider_unreachable');
+            throw new AnalysisFailed(ConnectionFailure::code($e));
         }
 
         if ($response->failed()) {
-            throw new AnalysisFailed($this->errorCodeFor($response->status()));
+            throw new AnalysisFailed($this->errorCodeFor($response->status()), $response->status());
         }
 
         $data = $response->json();
