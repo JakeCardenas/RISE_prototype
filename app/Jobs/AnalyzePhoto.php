@@ -77,10 +77,10 @@ class AnalyzePhoto implements ShouldQueue
                 'provider_request_id' => $result->requestId,
                 'completed_at' => now(),
             ])->save();
-            $this->report('info', $analysis, $started);
+            $this->logOutcome('info', $analysis, $started);
         } catch (AnalysisFailed $e) {
             $this->fail($analysis, $e->errorCode);
-            $this->report('warning', $analysis, $started, $e->httpStatus);
+            $this->logOutcome('warning', $analysis, $started, $e->httpStatus);
         } catch (Throwable $e) {
             // Only the exception type is logged; messages can contain provider URLs and keys
             Log::warning('RISE photo analysis failed unexpectedly.', ['analysis' => $analysis->id, 'exception' => $e::class]);
@@ -92,12 +92,12 @@ class AnalyzePhoto implements ShouldQueue
     public function failed(?Throwable $exception): void
     {
         $this->fail($this->analysis, 'worker_timeout');
-        $this->report('warning', $this->analysis, null);
+        $this->logOutcome('warning', $this->analysis, null);
     }
 
     // Safe operator diagnostics only: provider, model, outcome, duration and HTTP status; never keys, headers, photos
     // or anything the provider sent back
-    private function report(string $level, PhotoAnalysis $analysis, ?float $started, ?int $httpStatus = null): void
+    private function logOutcome(string $level, PhotoAnalysis $analysis, ?float $started, ?int $httpStatus = null): void
     {
         Log::log($level, 'RISE photo analysis '.($analysis->status === PhotoAnalysis::COMPLETED ? 'completed.' : 'failed.'), array_filter([
             'analysis' => $analysis->id,

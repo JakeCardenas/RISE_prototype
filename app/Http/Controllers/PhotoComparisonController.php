@@ -40,12 +40,12 @@ class PhotoComparisonController extends Controller
         }
 
         // One request per pair at a time, so a double click can't start two comparisons or two provider charges
-        Cache::lock('rise-comparison-request:'.$earlier->id.':'.$later->id, 10)->get(fn () => $this->request($point, $earlier, $later));
+        Cache::lock('rise-comparison-request:'.$earlier->id.':'.$later->id, 10)->get(fn () => $this->queueComparison($point, $earlier, $later));
 
         return redirect($back);
     }
 
-    private function request(MonitoringPoint $point, PhotoRecord $earlier, PhotoRecord $later): void
+    private function queueComparison(MonitoringPoint $point, PhotoRecord $earlier, PhotoRecord $later): void
     {
         $waiting = PhotoComparison::query()
             ->where('earlier_record_id', $earlier->id)->where('later_record_id', $later->id)

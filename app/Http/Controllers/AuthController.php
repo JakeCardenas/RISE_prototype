@@ -12,7 +12,7 @@ class AuthController extends Controller
     // LOGIN - show login page
     public function showLogin()
     {
-        return view('auth.login');   
+        return view('auth.login');
     }
 
     // LOGIN - check the email and password
@@ -21,10 +21,10 @@ class AuthController extends Controller
         $credential = $request->validate([
             'email' => 'required|email',
             'password' => 'required',
-        ]);   
+        ]);
 
-        if (Auth::attempt($credential, $request->boolean('remember'))){
-            
+        if (Auth::attempt($credential, $request->boolean('remember'))) {
+
             $request->session()->regenerate(); // new session id after login
 
             return redirect()->intended(route('overview'));
@@ -33,22 +33,22 @@ class AuthController extends Controller
         return back()
             ->withErrors(['email' => 'These credentials do not match our records'])
             ->onlyInput('email');
-            
+
     }
-    
+
     // REGISTER - show register page
     public function showRegister()
     {
-        return view('auth.register');   
+        return view('auth.register');
     }
 
-    // REGISTER - create the account, then logs the user in 
+    // REGISTER - create the account, then logs the user in
     public function register(Request $request)
     {
-     
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'email'=> 'required|string|email|max:255|unique:users',
+            'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
         ]);
 
@@ -57,21 +57,21 @@ class AuthController extends Controller
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
         ]);
-        
+
         Auth::login($user);
         $request->session()->regenerate();
-        
-        return redirect()->route('overview')->with('success', 'Welcome, '. $user->name . '!');
+
+        return redirect()->route('overview')->with('success', 'Welcome, '.$user->name.'!');
     }
- 
-    //LOGOUT - ends the session
+
+    // LOGOUT - ends the session
     public function logout(Request $request)
     {
         Auth::logout();
         $request->session()->invalidate(); // throws away the session data
         $request->session()->regenerateToken(); // regenerate CSRF tokens
-        
+
         return redirect()->route('login')->with('success', 'You have been logged out');
-        
+
     }
 }

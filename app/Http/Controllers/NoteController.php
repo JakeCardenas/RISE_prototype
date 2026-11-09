@@ -6,7 +6,6 @@ use App\Models\Note;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
-
 class NoteController extends Controller
 {
     // READ — show all notes
@@ -28,29 +27,29 @@ class NoteController extends Controller
     {
         $validated = $request->validate([
             'title' => 'required|max:100',
-            'body'  => 'required',
-            
+            'body' => 'required',
+
         ]);
 
         $note = new Note($validated);
         $note->user_id = Auth::id();
         $note->save();
-                
+
         return redirect()->route('notes.index')->with('success', 'Note added.');
     }
 
     private function authorizedOwner(Note $note): void
     {
-        if ($note->user_id != Auth::id()){
+        if ($note->user_id != Auth::id()) {
             abort(403);
         }
     }
-    
-        // UPDATE — show the form, pre-filled
+
+    // UPDATE — show the form, pre-filled
     public function edit(Note $note)
     {
         $this->authorizedOwner($note);    //
-    
+
         return view('notes.edit', ['note' => $note]);
     }
 
@@ -58,10 +57,10 @@ class NoteController extends Controller
     public function update(Request $request, Note $note)
     {
         $this->authorizedOwner($note);    //
-        
+
         $validated = $request->validate([
             'title' => 'required|max:100',
-            'body'  => 'required',
+            'body' => 'required',
         ]);
 
         $note->update($validated);

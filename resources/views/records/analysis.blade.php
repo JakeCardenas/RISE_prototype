@@ -11,7 +11,7 @@
     $regions = $status === PhotoAnalysis::COMPLETED ? $analysis->regions() : [];
     $observation = $analysis?->observation();
     // A provider that describes the photo in words (Gemini) gets the written result; a region detector's stays as it was
-    $written = $status === PhotoAnalysis::COMPLETED && isset($analysis->result['observation']);
+    $written = (bool) $analysis?->hasWrittenResult();
     $provider = $analysis?->provider ?? $detector->name();
     $providerName = AnalysisProviders::label($provider);
     $stillWaiting = $analysis?->status === PhotoAnalysis::PENDING && $analysis->requested_at->lt(now()->subMinutes(2));

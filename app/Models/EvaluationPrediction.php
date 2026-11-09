@@ -13,8 +13,11 @@ class EvaluationPrediction extends Model
     use HasUlids;
 
     public const PENDING = 'pending';
+
     public const PROCESSING = 'processing';
+
     public const COMPLETED = 'completed';
+
     public const FAILED = 'failed';
 
     // Set by the server, never filled from a request

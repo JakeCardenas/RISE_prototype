@@ -13,8 +13,11 @@ class PhotoComparison extends Model
     use HasUlids;
 
     public const PENDING = 'pending';
+
     public const PROCESSING = 'processing';
+
     public const COMPLETED = 'completed';
+
     public const FAILED = 'failed';
 
     // Every field is set by the server; nothing comes from user input

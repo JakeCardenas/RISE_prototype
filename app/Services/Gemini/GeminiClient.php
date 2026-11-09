@@ -111,7 +111,7 @@ class GeminiClient
     /**
      * A one-line text request with no photo, to check that the configured model answers at all
      *
-     * @return array{seconds: float, http: int|null, code: string|null}  code is null when it answered
+     * @return array{seconds: float, http: int|null, code: string|null} code is null when it answered
      */
     public function ping(int $timeout = 20): array
     {

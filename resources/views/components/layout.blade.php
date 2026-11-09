@@ -1,12 +1,14 @@
 @props(['title' => null, 'width' => 'wide', 'bare' => false])
 
+@use('App\Support\HomeAreas')
+
 @php
     // $railPoints and $currentPointId come from the layout view composer in AppServiceProvider (signed-in residents only)
     $railPoints ??= collect();
     $railGroups ??= collect();
     $currentPointId ??= null;
     // Area headings only appear once the resident has filed at least one point under an area
-    $showAreas = $railGroups->keys()->contains(fn ($area) => $area !== \App\Support\HomeAreas::UNSORTED);
+    $showAreas = $railGroups->keys()->contains(fn ($area) => $area !== HomeAreas::UNSORTED);
     $addPhotoUrl = route('records.create', array_filter(['point' => $currentPointId]));
     // On a point that already has a baseline, the main action is its next follow-up
     $isFollowUp = (bool) $railPoints->firstWhere('id', $currentPointId)?->photo_records_count;

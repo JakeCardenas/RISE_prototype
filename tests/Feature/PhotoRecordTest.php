@@ -3,6 +3,7 @@
 use App\Models\MonitoringPoint;
 use App\Models\PhotoRecord;
 use App\Models\User;
+use App\Support\PhotoUploads;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -105,7 +106,7 @@ test('bad uploads are rejected with a clear message and nothing is stored', func
 })->with([
     'missing' => [fn () => null, 'Take or choose a photo to save.'],
     'not an image' => [fn () => UploadedFile::fake()->create('notes.pdf', 100, 'application/pdf'), 'Use a JPEG, PNG'],
-    'too large' => [fn () => UploadedFile::fake()->image('big.jpg', 1200, 900)->size(\App\Support\PhotoUploads::maxKilobytes() + 1), 'This photo is larger than'],
+    'too large' => [fn () => UploadedFile::fake()->image('big.jpg', 1200, 900)->size(PhotoUploads::maxKilobytes() + 1), 'This photo is larger than'],
     'too small to compare' => [fn () => UploadedFile::fake()->image('tiny.jpg', 120, 120), 'This photo is too small to compare.'],
 ]);
 

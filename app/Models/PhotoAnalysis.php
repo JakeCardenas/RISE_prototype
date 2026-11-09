@@ -17,9 +17,13 @@ class PhotoAnalysis extends Model
     use HasFactory, HasUlids;
 
     public const PENDING = 'pending';
+
     public const PROCESSING = 'processing';
+
     public const COMPLETED = 'completed';
+
     public const FAILED = 'failed';
+
     public const NOT_CONFIGURED = 'not_configured';
 
     // Failures that can clear up by themselves, so trying again later can help; the rest need a settings change or
@@ -110,6 +114,12 @@ class PhotoAnalysis extends Model
         $stored = $this->result['observation'] ?? null;
 
         return is_array($stored) ? Observation::fromAnswer($stored) : Observation::fromRegions($this->regions());
+    }
+
+    // A provider that describes the photo in words (Gemini) leaves a written result; a region detector leaves marks
+    public function hasWrittenResult(): bool
+    {
+        return $this->status === self::COMPLETED && isset($this->result['observation']);
     }
 
     public function providerLabel(): string

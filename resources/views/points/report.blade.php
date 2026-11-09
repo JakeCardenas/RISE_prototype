@@ -1,3 +1,4 @@
+@use('App\Support\AiWording')
 @use('App\Support\Observations')
 
 @php
@@ -159,12 +160,21 @@
                                             AI image check, requested by the resident
                                         </h4>
                                         <p class="mt-1.5">
-                                            {{ $analysis->region_count > 0
-                                                ? trans_choice('{1} The model marked one possible crack-like area for the resident to review.|[2,*] The model marked :count possible crack-like areas for the resident to review.', $analysis->region_count)
-                                                : 'The model did not mark an area in this photo. It can still miss cracks.' }}
+                                            @if ($analysis->hasWrittenResult())
+                                                {{-- A written result (Gemini) marks nothing, so it is reported by its finding --}}
+                                                @php($finding = $analysis->observation()?->finding)
+                                                {{ $finding ? AiWording::finding($finding) : 'The stored result couldn’t be checked, so it isn’t shown.' }}
+                                                @if (in_array($finding, ['possible_feature', 'no_clear_feature'], true))
+                                                    {{ AiWording::findingNote($finding) }}
+                                                @endif
+                                            @else
+                                                {{ $analysis->region_count > 0
+                                                    ? trans_choice('{1} The model marked one possible crack-like area for the resident to review.|[2,*] The model marked :count possible crack-like areas for the resident to review.', $analysis->region_count)
+                                                    : 'The model did not mark an area in this photo. It can still miss cracks.' }}
+                                            @endif
                                         </p>
                                         <p class="mt-1.5 text-muted">
-                                            Model {{ $analysis->model_version ?? $analysis->model_id }} · {{ Str::headline($analysis->provider) }} ·
+                                            Model {{ $analysis->model_version ?? $analysis->model_id }} · {{ $analysis->providerLabel() }} ·
                                             analysed <x-local-time :time="$analysis->completed_at" format="date" />
                                         </p>
                                         <p class="mt-1.5 text-muted">

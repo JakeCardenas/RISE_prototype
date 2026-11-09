@@ -62,7 +62,7 @@ class PhotoProcessor
 
         if ($this->isHeic($mime) && $this->supportsHeic()) {
             try {
-                $image = new Imagick();
+                $image = new Imagick;
                 $image->pingImage($path);
 
                 return [$image->getImageWidth(), $image->getImageHeight()];
@@ -106,7 +106,7 @@ class PhotoProcessor
     {
         if (extension_loaded('imagick')) {
             try {
-                $image = new Imagick();
+                $image = new Imagick;
                 $image->pingImage($path);
                 $properties = $image->getImageProperties('exif:*TimeOriginal', true);
 
@@ -125,7 +125,7 @@ class PhotoProcessor
     {
         if (extension_loaded('imagick')) {
             try {
-                $image = new Imagick();
+                $image = new Imagick;
                 $image->pingImage($path);
                 $xmp = $image->getImageProfiles('xmp', true)['xmp'] ?? '';
 
@@ -149,7 +149,7 @@ class PhotoProcessor
 
     private function imagickCopy(string $bytes, int $maxSide, int $quality): ProcessedImage
     {
-        $image = new Imagick();
+        $image = new Imagick;
         $image->readImageBlob($bytes);
         $image->setIteratorIndex(0);
         $image->autoOrient();

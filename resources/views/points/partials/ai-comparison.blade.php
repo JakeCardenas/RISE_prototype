@@ -1,4 +1,5 @@
 @use('App\Models\PhotoComparison')
+@use('App\Services\Comparison\GeminiPhotoComparer')
 @use('App\Support\AiWording')
 @use('App\Support\Observations')
 
@@ -20,7 +21,7 @@
         <x-ai-progress class="mt-4" heading="Comparing the two photos…" :level="3" subject="the photos"
             :status-url="route('ai-comparisons.status', $aiComparison)" :stage="$aiComparison->stage()" :elapsed="$aiComparison->elapsedSeconds()"
             :provider="$aiComparison->provider" :requested-at="$aiComparison->requested_at"
-            :still-waiting="$aiComparison->status === \App\Models\PhotoComparison::PENDING && $aiComparison->requested_at->lt(now()->subMinutes(2))" />
+            :still-waiting="$aiComparison->status === PhotoComparison::PENDING && $aiComparison->requested_at->lt(now()->subMinutes(2))" />
     @elseif ($aiComparison?->status === PhotoComparison::COMPLETED)
         @php($comparability = $aiComparison->comparability())
         <p class="meta mt-1">
@@ -137,7 +138,7 @@
             <div>
                 <dt>Storage and training</dt>
                 <dd class="font-medium">
-                    @if ($comparer instanceof \App\Services\Comparison\GeminiPhotoComparer)
+                    @if ($comparer instanceof GeminiPhotoComparer)
                         RISE asks Gemini not to save this request for follow-up questions (store: false). How Google handles the copies,
                         including how long they’re kept and whether they may be used to improve Google’s products, depends on the terms of
                         the Gemini API account this server uses

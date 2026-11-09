@@ -32,12 +32,12 @@ class PhotoAnalysisController extends Controller
         Gate::authorize('analyze', $record);
 
         // One request per photo at a time, so a double click can't start two analyses or two provider charges
-        Cache::lock('rise-analysis-request:'.$record->id, 10)->get(fn () => $this->request($record));
+        Cache::lock('rise-analysis-request:'.$record->id, 10)->get(fn () => $this->queueAnalysis($record));
 
         return redirect()->route('records.analysis.show', $record);
     }
 
-    private function request(PhotoRecord $record): void
+    private function queueAnalysis(PhotoRecord $record): void
     {
         $latest = $record->latestAnalysis()->first();
 
