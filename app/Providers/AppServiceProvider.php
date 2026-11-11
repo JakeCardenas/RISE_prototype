@@ -78,8 +78,14 @@ class AppServiceProvider extends ServiceProvider
         // How quickly an evaluation run's jobs call the provider; jobs over the limit wait in the queue
         RateLimiter::for('evaluation-provider', fn () => Limit::perMinute(max(1, (int) config('rise.evaluation_per_minute'))));
 
-        // The layout's navigation lists the signed-in resident's own monitoring points by area, and marks the one being viewed
+        // The layout's navigation lists the signed-in resident's own monitoring points by area, and marks the one being viewed.
+        // Bare pages (sign-in, the printable report, error pages) draw no navigation, so nothing is loaded for them; an
+        // error page then never depends on the database or on who is signed in.
         View::composer('components.layout', function ($view) {
+            if ($view->getData()['bare'] ?? false) {
+                return;
+            }
+
             $user = auth()->user();
 
             if (! $user) {

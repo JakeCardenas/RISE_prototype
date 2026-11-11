@@ -5,7 +5,7 @@
     $initials = Str::of($user->name)->explode(' ')->filter()->take(2)->map(fn ($part) => Str::upper(Str::substr($part, 0, 1)))->implode('');
 @endphp
 
-{{-- The signed-in resident and Log out; in the sidebar it opens upwards, in the phone's top bar it drops down --}}
+{{-- The signed-in resident and Sign out; in the sidebar it opens upwards, in the phone's top bar it drops down --}}
 <details class="relative" data-menu>
     @if ($placement === 'rail')
         <summary class="rail-link w-full gap-3 pr-2">
@@ -41,7 +41,7 @@
         <form action="{{ route('logout') }}" method="POST" class="border-t border-ink/10 pt-1.5">
             @csrf
             <button type="submit" class="menu-item">
-                <x-icon name="log-out" class="size-4 text-muted" /> Log out
+                <x-icon name="log-out" class="size-4 text-muted" /> Sign out
             </button>
         </form>
     </div>

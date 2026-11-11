@@ -10,5 +10,6 @@ import './rise/time-zone';
 import './rise/follow-up';
 import './rise/copy-text';
 import './rise/annotate-regions';
+import './rise/password-toggle';
 
 localizeTimes(document);

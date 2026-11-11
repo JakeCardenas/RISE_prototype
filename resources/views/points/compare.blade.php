@@ -80,13 +80,14 @@
             </div>
 
             <div class="compare-views mt-8">
-                {{-- The slider needs JavaScript, so the switch appears only once the script has run --}}
+                {{-- The slider needs JavaScript, so the switch appears only once the script has run. On phones it fills the
+                     width, and "slider" is left to screen readers so each label fits on one line. --}}
                 <div class="flex">
-                    <fieldset data-compare-switch hidden>
+                    <fieldset data-compare-switch hidden class="min-w-0 max-sm:flex-1">
                         <legend class="sr-only">View</legend>
-                        <div class="segmented glass">
+                        <div class="segmented segmented-fill glass">
                             <label class="segmented-option"><input type="radio" name="compare-view" value="side" class="sr-only" checked> <x-icon name="columns" class="size-4" /> Side by side</label>
-                            <label class="segmented-option"><input type="radio" name="compare-view" value="wipe" class="sr-only"> <x-icon name="split" class="size-4" /> Before/after slider</label>
+                            <label class="segmented-option"><input type="radio" name="compare-view" value="wipe" class="sr-only"> <x-icon name="split" class="size-4" /> <span>Before/after<span class="max-sm:sr-only"> slider</span></span></label>
                             <label class="segmented-option"><input type="radio" name="compare-view" value="overlay" class="sr-only"> <x-icon name="layers" class="size-4" /> Overlay</label>
                         </div>
                     </fieldset>

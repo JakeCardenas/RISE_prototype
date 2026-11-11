@@ -15,7 +15,7 @@ test('repeated logins for one address are limited, even with the right password,
 
     foreach (['Resident@Example.com', 'RESIDENT@example.com', 'resident@example.com', ' resident@example.com', 'resident@EXAMPLE.com'] as $email) {
         $this->from(route('login'))->post(route('login'), ['email' => $email, 'password' => 'wrong-password'])
-            ->assertSessionHasErrors(['email' => 'These credentials do not match our records']);
+            ->assertSessionHasErrors(['email' => 'That email and password don’t match an account. Check them and try again.']);
     }
 
     $this->from(route('login'))->post(route('login'), ['email' => 'resident@example.com', 'password' => 'password'])

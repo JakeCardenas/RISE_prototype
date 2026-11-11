@@ -25,6 +25,8 @@
     <meta name="description" content="RISE keeps a private, dated photo record of cracks and surfaces at home.">
     <title>{{ $title ? $title.' · RISE' : 'RISE' }}</title>
     <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
+    {{-- The RISE mark on white, for a phone's home screen --}}
+    <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="on-backdrop min-h-dvh">

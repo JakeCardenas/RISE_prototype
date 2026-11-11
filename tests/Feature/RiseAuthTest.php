@@ -14,9 +14,9 @@ test('guests are sent to the login page', function () {
 test('the login page uses RISE wording', function () {
     $this->get(route('login'))
         ->assertOk()
-        ->assertSee('Welcome back')
+        ->assertSee('Welcome to RISE')
         ->assertSee('Sign in to see your spots and follow-ups.')
-        ->assertSeeTextInOrder(['Track cracks over time, one photo at a time.', 'Welcome back'])
+        ->assertSeeTextInOrder(['Track cracks over time, one photo at a time.', 'Welcome to RISE'])
         ->assertDontSee('How RISE works')
         ->assertDontSee('My Notes');
 });
@@ -57,7 +57,7 @@ test('the account menu no longer links to the old Notes area', function () {
     $this->actingAs(User::factory()->create())
         ->get(route('overview'))
         ->assertOk()
-        ->assertSee('Log out')
+        ->assertSee('Sign out')
         ->assertDontSee(route('notes.index'));
 });
 

@@ -32,6 +32,10 @@
                     <x-alert>{{ session('success') }}</x-alert>
                 @endif
 
+                @if (session('info'))
+                    <x-alert type="info">{{ session('info') }}</x-alert>
+                @endif
+
                 <h1 class="page-title text-[2rem] sm:text-[2.25rem] lg:text-[2.25rem]">{{ $heading }}</h1>
 
                 @if ($intro)

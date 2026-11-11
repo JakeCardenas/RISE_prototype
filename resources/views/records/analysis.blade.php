@@ -43,9 +43,9 @@
         {{-- The photo, with the model's marked regions drawn over it when there are any --}}
         <section class="analysis-view min-w-0" aria-label="Photo">
             @if ($regions)
-                <fieldset class="mb-4">
+                <fieldset class="mb-4 min-w-0">
                     <legend class="sr-only">Show</legend>
-                    <div class="segmented glass">
+                    <div class="segmented segmented-fill glass">
                         <label class="segmented-option"><input type="radio" name="view" value="marked" class="sr-only" checked> Marked-up result</label>
                         <label class="segmented-option"><input type="radio" name="view" value="original" class="sr-only"> Original photo</label>
                     </div>
@@ -148,7 +148,7 @@
                             @csrf
                             <button type="submit" class="btn btn-primary w-full sm:w-auto"><x-icon name="scan" /> Analyze with AI</button>
                         </form>
-                        <p class="mt-3 text-sm text-muted">You can keep this photo without analysing it.</p>
+                        <p class="mt-3 text-sm text-muted">You can keep this photo without analyzing it.</p>
                     @else
                         <h2 id="result-heading" class="flex items-center gap-2.5 section-title">
                             <x-icon name="info" class="text-primary" /> AI analysis isn’t set up
@@ -294,7 +294,7 @@
                             <dd><x-local-time :time="$analysis->requested_at" /></dd>
                         </div>
                         <div>
-                            <dt>Analysed</dt>
+                            <dt>Analyzed</dt>
                             <dd><x-local-time :time="$analysis->completed_at" /></dd>
                         </div>
                         @if ($written)

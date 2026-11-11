@@ -175,7 +175,7 @@
                                         </p>
                                         <p class="mt-1.5 text-muted">
                                             Model {{ $analysis->model_version ?? $analysis->model_id }} · {{ $analysis->providerLabel() }} ·
-                                            analysed <x-local-time :time="$analysis->completed_at" format="date" />
+                                            analyzed <x-local-time :time="$analysis->completed_at" format="date" />
                                         </p>
                                         <p class="mt-1.5 text-muted">
                                             AI image results can be wrong. They do not identify a crack’s cause or determine whether a building is safe.

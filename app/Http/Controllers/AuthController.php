@@ -31,7 +31,7 @@ class AuthController extends Controller
         }
 
         return back()
-            ->withErrors(['email' => 'These credentials do not match our records'])
+            ->withErrors(['email' => 'That email and password don’t match an account. Check them and try again.'])
             ->onlyInput('email');
 
     }
@@ -61,7 +61,7 @@ class AuthController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
 
-        return redirect()->route('overview')->with('success', 'Welcome, '.$user->name.'!');
+        return redirect()->route('overview')->with('success', 'Your account is ready.');
     }
 
     // LOGOUT - ends the session
@@ -71,7 +71,7 @@ class AuthController extends Controller
         $request->session()->invalidate(); // throws away the session data
         $request->session()->regenerateToken(); // regenerate CSRF tokens
 
-        return redirect()->route('login')->with('success', 'You have been logged out');
+        return redirect()->route('login')->with('success', 'You’re signed out.');
 
     }
 }

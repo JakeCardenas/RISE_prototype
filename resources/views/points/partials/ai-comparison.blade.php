@@ -79,8 +79,9 @@
         <div class="mt-5 flex flex-wrap items-start gap-2">
             @if ($aiComparison->asText())
                 <button type="button" class="btn btn-secondary" data-copy-text="{{ $aiComparison->asText() }}" hidden>
-                    <x-icon name="layers" class="size-4" /> <span data-copy-label>Copy wording</span>
+                    <x-icon name="copy" class="size-4" /> <span data-copy-label>Copy wording</span>
                 </button>
+                <span class="sr-only" role="status" data-copy-status></span>
             @endif
             <form method="POST" action="{{ route('ai-comparisons.dismiss', $aiComparison) }}">
                 @csrf
