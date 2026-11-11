@@ -1,40 +1,46 @@
 @props(['heading', 'intro' => null])
 
-{{-- Sign in and register: one clear glass window in the RISE environment, with the form on a lightly translucent sage-white panel inside it --}}
+{{--
+    Sign in and register: one glass window in the RISE environment, split between a crisp view of home with RISE's
+    promise and the form on a lightly translucent sage-white panel. On phones the photo becomes a short banner above
+    the form. The photo comes first in reading order; on wide screens it sits to the right.
+--}}
 <div class="flex min-h-dvh flex-col items-center justify-center px-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-10">
-    <div class="glass glass-shell glass-enter grid w-full max-w-4xl gap-2 rounded-[2rem] p-2 sm:p-2.5 lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)]">
-        {{-- The brand and its promise at the top, then the study's university, with deliberate open space around it --}}
-        <section aria-label="About RISE" class="flex flex-col px-4 pt-4 pb-3 sm:px-8 sm:pt-7 lg:px-9 lg:py-9">
-            <a href="{{ route('login') }}" class="-m-1.5 flex w-fit items-center gap-3.5 rounded-[1.25rem] p-1.5 sm:gap-4 lg:gap-5 lg:rounded-[1.5rem]">
-                <span class="brand-tile brand-tile-hero size-14 sm:size-16 lg:size-20">
-                    <x-rise-mark class="size-10.5 sm:size-12 lg:size-15" />
-                </span>
-                <span class="text-[1.625rem] leading-none font-extrabold tracking-[0.12em] text-heading sm:text-[1.875rem] lg:text-[2rem]">RISE</span>
-            </a>
-
-            <p class="mt-6 max-w-sm text-[1.5rem] leading-[1.15] font-bold tracking-[-0.03em] text-balance text-heading sm:mt-8 sm:text-[2rem] lg:mt-11 lg:text-[2.375rem]">
+    <div class="glass glass-shell glass-enter grid w-full max-w-lg gap-2 rounded-[2rem] p-2 sm:p-2.5 lg:min-h-[42rem] lg:max-w-[68rem] lg:grid-cols-[minmax(0,27rem)_minmax(0,1fr)]">
+        <section aria-label="About RISE" class="auth-photo flex min-h-40 flex-col justify-end p-5 sm:min-h-52 sm:p-7 lg:order-last lg:p-10">
+            <picture>
+                <source srcset="{{ asset('images/montana-misora-background.webp') }}" type="image/webp">
+                <img src="{{ asset('images/montana-misora-background.png') }}" alt="" width="1578" height="996" decoding="async">
+            </picture>
+            <p class="max-w-md text-[1.375rem] leading-[1.15] font-bold tracking-[-0.025em] text-balance text-white sm:text-[1.75rem] lg:text-[2.375rem]">
                 Track cracks over time, one photo at a time.
             </p>
-
-            {{-- On wide screens the free space splits around the university details: nearer the tagline, with room below --}}
-            <span class="hidden min-h-12 grow-3 lg:block" aria-hidden="true"></span>
-            <x-university-lockup class="hidden lg:flex" />
-            <span class="hidden grow-2 lg:block" aria-hidden="true"></span>
+            <p class="mt-2 text-[0.9375rem] text-white/90 sm:text-base lg:mt-3 lg:text-[1.0625rem]">A calm, private record of your home.</p>
         </section>
 
-        <div class="sheet sheet-auth p-6 sm:p-9">
-            @if (session('success'))
-                <x-alert>{{ session('success') }}</x-alert>
-            @endif
+        {{-- The brand at the top, the form in the middle, the privacy promise at the foot --}}
+        <div class="sheet sheet-auth flex flex-col p-6 sm:p-9">
+            <a href="{{ route('login') }}" class="-m-1.5 flex w-fit items-center gap-3.5 rounded-[1.25rem] p-1.5 sm:gap-4">
+                <span class="brand-tile brand-tile-hero size-12 sm:size-14 lg:size-16">
+                    <x-rise-mark class="size-9 sm:size-10.5 lg:size-12" />
+                </span>
+                <span class="text-[1.375rem] leading-none font-extrabold tracking-[0.12em] text-heading sm:text-[1.625rem]">RISE</span>
+            </a>
 
-            <h1 class="page-title text-[2rem] sm:text-[2.25rem] lg:text-[2.25rem]">{{ $heading }}</h1>
+            <div class="my-auto pt-8 sm:pt-10">
+                @if (session('success'))
+                    <x-alert>{{ session('success') }}</x-alert>
+                @endif
 
-            @if ($intro)
-                <p class="mt-2 text-[1.0625rem] text-muted">{{ $intro }}</p>
-            @endif
+                <h1 class="page-title text-[2rem] sm:text-[2.25rem] lg:text-[2.25rem]">{{ $heading }}</h1>
 
-            <div class="mt-7">
-                {{ $slot }}
+                @if ($intro)
+                    <p class="mt-2 text-[1.0625rem] text-muted">{{ $intro }}</p>
+                @endif
+
+                <div class="mt-7">
+                    {{ $slot }}
+                </div>
             </div>
 
             <p class="mt-7 flex items-start gap-2 border-t border-line pt-5 text-sm text-muted">
@@ -44,7 +50,5 @@
         </div>
     </div>
 
-    <div class="mt-6 flex justify-center px-4 pb-2 lg:hidden">
-        <x-university-lockup class="flex text-left" />
-    </div>
+    <x-university-lockup class="mt-6 flex px-4 pb-2 text-left" />
 </div>
