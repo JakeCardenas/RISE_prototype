@@ -4,6 +4,7 @@ use App\Http\Controllers\AiFeedbackController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ComparisonController;
 use App\Http\Controllers\FollowUpController;
+use App\Http\Controllers\HelpController;
 use App\Http\Controllers\MonitoringPointController;
 use App\Http\Controllers\NoteController;
 use App\Http\Controllers\ObservationReportController;
@@ -57,6 +58,10 @@ Route::middleware('auth')->group(function () {
     Route::patch('/ai-comparisons/{comparison}/dismiss', [PhotoComparisonController::class, 'dismiss'])->name('ai-comparisons.dismiss');
     Route::put('/analyses/{analysis}/feedback', [AiFeedbackController::class, 'analysis'])->middleware('throttle:ai-feedback')->name('analyses.feedback');
     Route::put('/ai-comparisons/{comparison}/feedback', [AiFeedbackController::class, 'comparison'])->middleware('throttle:ai-feedback')->name('ai-comparisons.feedback');
+
+    // RISE HELP (the floating helper's chat; nothing in it is saved)
+    Route::get('/help/next-step', [HelpController::class, 'nextStep'])->name('help.next-step');
+    Route::post('/help/ask', [HelpController::class, 'ask'])->middleware('throttle:help-chat')->name('help.ask');
 
     // CAPSTONE EVALUATION WORKSPACE (researcher accounts only, see README.md; anyone else gets a 404)
     Route::middleware(EnsureResearcher::class)->prefix('research')->name('research.')->group(function () {

@@ -41,7 +41,8 @@ test('a point with only its baseline shows the first follow-up as one compact st
     $this->actingAs($point->user)->get(route('points.show', $point))
         ->assertOk()
         ->assertSeeInOrder(['Baseline photo', 'Follow-up 1', 'not taken yet', 'Add follow-up photo', 'Observation passport'])
-        ->assertDontSee('Compare before and after');
+        // No way to compare yet (RISE Help's built-in answers name the button on every page, so the link is checked)
+        ->assertDontSee(route('points.compare', $point));
 });
 
 test('photo dates are labelled by source: saved to RISE, photo taken (unverified) and, for older uploads, file modified', function () {

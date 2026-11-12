@@ -6,6 +6,7 @@ use App\Models\MonitoringPoint;
 use App\Models\PhotoRecord;
 use App\Support\FollowUps;
 use App\Support\HomeAreas;
+use App\Support\NextStep;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -23,14 +24,7 @@ class OverviewController extends Controller
         $today = FollowUps::today($request);
 
         // Most recently photographed first; points without photos by when they were added
-        $points = $user->monitoringPoints()
-            ->with('latestRecord')
-            ->withCount('photoRecords')
-            ->withMin('photoRecords', 'submitted_at')
-            ->withCasts(['photo_records_min_submitted_at' => 'datetime'])
-            ->get()
-            ->sortByDesc(fn (MonitoringPoint $point) => ($point->latestRecord?->submitted_at ?? $point->created_at)->getTimestamp())
-            ->values();
+        $points = NextStep::points($user);
 
         // Follow-up dates the resident chose, earliest first; a follow-up needs a baseline, so spots without a photo are left out
         $planned = $points
@@ -41,7 +35,7 @@ class OverviewController extends Controller
         $due = $reminders->filter(fn (MonitoringPoint $point) => FollowUps::daysUntil($point->follow_up_on, $today) <= 0)->values();
         $upcoming = $planned->filter(fn (MonitoringPoint $point) => FollowUps::daysUntil($point->follow_up_on, $today) > 0)->values();
 
-        $nextStep = $this->nextStep($points, $due);
+        $nextStep = NextStep::choose($points, $due);
 
         return view('overview', [
             'firstName' => Str::of($user->name)->trim()->before(' ')->toString(),
@@ -61,39 +55,6 @@ class OverviewController extends Controller
             'reminders' => $reminders->reject(fn (MonitoringPoint $point) => $point->is($nextStep['point'] ?? null))->values(),
             'recent' => $this->recentPhotos($user, $points),
         ]);
-    }
-
-    // The one step most worth taking now: start; photograph a new spot; a follow-up the resident planned for today or
-    // earlier; a first follow-up for a spot that only has its baseline; or else compare the most recently photographed spot
-    private function nextStep(Collection $points, Collection $due): array
-    {
-        if ($points->isEmpty()) {
-            return ['kind' => 'start'];
-        }
-
-        $unphotographed = $points->where('photo_records_count', 0)->sortByDesc('created_at')->first();
-
-        if ($unphotographed) {
-            return ['kind' => 'baseline', 'point' => $unphotographed];
-        }
-
-        if ($due->isNotEmpty()) {
-            return ['kind' => 'due', 'point' => $due->first(), 'moreDue' => $due->count() - 1];
-        }
-
-        $baselineOnly = $points->first(fn (MonitoringPoint $point) => $point->photo_records_count === 1);
-
-        if ($baselineOnly) {
-            return ['kind' => 'follow-up', 'point' => $baselineOnly];
-        }
-
-        $point = $points->first();
-
-        return [
-            'kind' => 'compare',
-            'point' => $point,
-            'baseline' => $point->photoRecords()->oldest('submitted_at')->oldest('id')->first(),
-        ];
     }
 
     // The latest photos across all points, each with its place in its point's history. Any newer photo of the same

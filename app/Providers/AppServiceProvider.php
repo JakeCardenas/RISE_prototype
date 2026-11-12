@@ -11,6 +11,7 @@ use App\Services\Comparison\OpenAiCompatiblePhotoComparer;
 use App\Services\Comparison\PhotoComparer;
 use App\Services\Comparison\UnconfiguredPhotoComparer;
 use App\Services\Gemini\GeminiClient;
+use App\Services\Help\HelpAssistant;
 use App\Support\HomeAreas;
 use Closure;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -40,6 +41,9 @@ class AppServiceProvider extends ServiceProvider
                 default => new UnconfiguredPhotoComparer,
             };
         });
+
+        // RISE Help answers typed questions with the same Gemini setup, once it is configured (see README.md)
+        $this->app->bind(HelpAssistant::class, fn () => new HelpAssistant(config('services.gemini')));
     }
 
     /**
@@ -67,6 +71,12 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('ai-requests', fn (Request $request) => [
             Limit::perMinute(4)->by('minute:'.$request->user()->id)->response($this->slowDown('AI checks')),
             Limit::perHour(30)->by('hour:'.$request->user()->id)->response($this->slowDown('AI checks')),
+        ]);
+
+        // Typed help questions can go to the AI provider too; the chat shows the message itself
+        RateLimiter::for('help-chat', fn (Request $request) => [
+            Limit::perMinute(8)->by('minute:'.$request->user()->id)->response($this->slowDownJson('questions')),
+            Limit::perHour(60)->by('hour:'.$request->user()->id)->response($this->slowDownJson('questions')),
         ]);
 
         RateLimiter::for('ai-feedback', fn (Request $request) => Limit::perMinute(20)->by($request->user()->id)->response($this->slowDown('feedback changes')));
@@ -113,8 +123,7 @@ class AppServiceProvider extends ServiceProvider
     private function tooManyAttempts(string $kind): Closure
     {
         return function (Request $request, array $headers) use ($kind) {
-            $seconds = max(1, (int) ($headers['Retry-After'] ?? 60));
-            $wait = $seconds >= 90 ? ceil($seconds / 60).' minutes' : $seconds.' seconds';
+            $wait = $this->wait($headers);
 
             return back()
                 ->withErrors(['email' => "Too many {$kind} attempts. Please wait {$wait} and try again."])
@@ -126,10 +135,24 @@ class AppServiceProvider extends ServiceProvider
     private function slowDown(string $what): Closure
     {
         return function (Request $request, array $headers) use ($what) {
-            $seconds = max(1, (int) ($headers['Retry-After'] ?? 60));
-            $wait = $seconds >= 90 ? ceil($seconds / 60).' minutes' : $seconds.' seconds';
+            $wait = $this->wait($headers);
 
             return back()->with('info', "That’s a lot of {$what} in a short time, so nothing was sent or saved. Please wait {$wait} and try again.");
         };
+    }
+
+    // The same message for requests made from a script, such as the help chat
+    private function slowDownJson(string $what): Closure
+    {
+        return fn (Request $request, array $headers) => response()->json([
+            'message' => "That’s a lot of {$what} in a short time, so nothing was sent. Please wait {$this->wait($headers)} and try again.",
+        ], 429, $headers);
+    }
+
+    private function wait(array $headers): string
+    {
+        $seconds = max(1, (int) ($headers['Retry-After'] ?? 60));
+
+        return $seconds >= 90 ? ceil($seconds / 60).' minutes' : $seconds.' seconds';
     }
 }

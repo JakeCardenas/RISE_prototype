@@ -130,7 +130,8 @@
         <div @class(['flex min-h-dvh flex-col', 'lg:pl-77' => auth()->check()])>
             <main id="main" @class([
                 'w-full flex-1 px-4 pt-[var(--top-bar-space)] sm:px-6',
-                'pb-[var(--tab-bar-space)] lg:px-12 lg:pt-12 lg:pb-16' => auth()->check(),
+                {{-- Signed-in pages end with room to scroll clear of the tab bar and the floating help button --}}
+                'pb-[calc(var(--tab-bar-space)+2.5rem)] lg:px-12 lg:pt-12 lg:pb-28' => auth()->check(),
                 'pb-12 lg:pt-28' => ! auth()->check(),
             ])>
                 <div class="mx-auto max-w-6xl">
@@ -197,6 +198,9 @@
                     </details>
                 </div>
             </nav>
+
+            {{-- RISE Help: the floating helper and his chat --}}
+            <x-help-chat :add-photo-url="$addPhotoUrl" :current-point="$railPoints->firstWhere('id', $currentPointId)" />
         @endauth
     @endif
 </body>

@@ -11,5 +11,6 @@ import './rise/follow-up';
 import './rise/copy-text';
 import './rise/annotate-regions';
 import './rise/password-toggle';
+import './rise/help-chat';
 
 localizeTimes(document);

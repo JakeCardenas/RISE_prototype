@@ -7,6 +7,7 @@
         'alert-triangle' => '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
         'arrow-left' => '<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',
         'arrow-right' => '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
+        'arrow-up' => '<path d="m5 12 7-7 7 7"/><path d="M12 19V5"/>',
         'calendar' => '<path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>',
         'chevron-down' => '<path d="m6 9 6 6 6-6"/>',
         'chevron-left' => '<path d="m15 18-6-6 6-6"/>',
@@ -41,6 +42,7 @@
         'trash' => '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>',
         'upload' => '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/>',
         'user' => '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+        'x' => '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
     ][$name];
 @endphp
 
